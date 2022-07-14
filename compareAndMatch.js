@@ -5,7 +5,7 @@ import { parse } from 'csv-parse';
 // import JisonLex from 'jison-lex';
 import {Parser} from 'sparqljs';
 
-
+import lineColumn from 'line-column';
 
 const queriesInputStream = fs.createReadStream('./output/queries.csv');
 
@@ -26,11 +26,49 @@ var parsedQuery = sparqlParser.parse(
 // var lexerSource = JisonLex.generate(grammar);
 // console.log(lexerSource);
 
-const lexer = sparqlParser.lexer;
-lexer.setInput('   SELECT * WHERE {?s ?p ?o}');
-console.log(lexer.lex());
-console.log(lexer.lex());
+const inputStr = `
 
+
+SELECT * WHERE {
+  
+  ?s ?p
+  ?o
+}
+
+
+`;
+
+const lcFinder = lineColumn(inputStr);
+
+const lexer = sparqlParser.lexer;
+lexer.setInput(inputStr);
+console.log(lexer.lex());
+// console.log(lexer.next());
+console.log(lexer.showPosition());
+console.log(lexer.match);
+console.log(lexer.yylineno);
+const loc = lexer.yylloc;
+console.log(loc);
+console.log(lcFinder.toIndex(loc.first_line, loc.first_column + 1));
+console.log(lcFinder.toIndex(loc.last_line, loc.last_column + 1));
+console.log(lexer.yytext);
+console.log(lexer.yyleng);
+
+console.log(lexer.lex());
+console.log(lexer.showPosition());
+console.log(lexer.match);
+console.log(lexer.yylineno);
+const loc2 = lexer.yylloc;
+console.log(loc2);
+console.log(lcFinder.toIndex(loc2.first_line, loc2.first_column + 1));
+console.log(lcFinder.toIndex(loc2.last_line, loc2.last_column + 1));
+console.log(lexer.yytext);
+console.log(lexer.yyleng);
+
+// console.log(sparqlParser.terminals_);
+console.log(sparqlParser.yy);
+
+console.log(sparqlParser.trace())
 
 // const queriesOutputStream = fs.createWriteStream('./output/queries.csv');
 
