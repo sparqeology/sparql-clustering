@@ -7,7 +7,7 @@ import { stringify } from 'csv-stringify';
 const path = './input/input.nt';
 const inputStream = fs.createReadStream(path);
 
-const queriesOutputStream = fs.createWriteStream('./output/queries.csv');
+const queriesOutputStream = fs.createWriteStream('./output/someQueries.csv');
 
 const parser = rdfParser.default;
 
@@ -38,7 +38,9 @@ parser.parse(inputStream, {path})
             const id = quad._subject.id.substr(prefixLength);
             const query = quad._object.value;
             if (!(id in queryMap)) {
-                stringifier.write([quad._subject.id.substr(prefixLength), quad._object.value]);
+                if (query.indexOf('GRAPH bio2rdf:bioportal_resource:bio2rdf.dataset.bioportal.R3') !== -1) {
+                    stringifier.write([quad._subject.id.substr(prefixLength), quad._object.value]);
+                }
                 queryMap[id] = true;
                 queryCount++;
             }

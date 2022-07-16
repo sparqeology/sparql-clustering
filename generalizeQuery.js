@@ -32,15 +32,15 @@ const GENERALIZABLE_SYMBOLS = [
 
 const EOF = 6;
 
-function generalizeQuery(queryStr, options = {}) {
+export default function generalizeQuery(queryStr, options = {}) {
     const sparqlParser = new Parser();
     const lexer = sparqlParser.lexer;
     lexer.setInput(queryStr);
-    const lcFinder = lineColumn(inputStr);
+    const lcFinder = lineColumn(queryStr);
     var afterPreamble = false;
     var symbol;
     var prevStrEnd = 0;
-    var parents = [{query: queryStr, paramBindings: []}];
+    var parents = [{query: '', paramBindings: []}];
     while((symbol = lexer.lex()) !== EOF) {
         // console.log(symbol);
         // console.log(sparqlParser.terminals_[symbol]);
@@ -52,6 +52,7 @@ function generalizeQuery(queryStr, options = {}) {
         }
         if (QUERY_SYMBOLS.includes(sparqlParser.terminals_[symbol])) {
             afterPreamble = true;
+            parents = parents.map(parent => ({ query: parent.query + lexer.match, paramBindings: parent.paramBindings}))
         } else if (afterPreamble
                 && (options.maxVars === undefined || options.maxVars )
                 && GENERALIZABLE_SYMBOLS.includes(sparqlParser.terminals_[symbol])) {
@@ -73,22 +74,22 @@ function generalizeQuery(queryStr, options = {}) {
 }
 
 
-const inputStr = `
+// const inputStr = `
 
-PREFIX foaf: <http://xmlns.com/foaf/0.1/> 
+// PREFIX foaf: <http://xmlns.com/foaf/0.1/> 
 
-SELECT * {
-    ?mickey foaf:name "Mickey Mouse"@en;
-        foaf:knows ?other.
-}
+// SELECT * {
+//     ?mickey foaf:name "Mickey Mouse"@en;
+//         foaf:knows ?other.
+// }
 
 
-`;
+// `;
 
-console.log(generalizeQuery(inputStr));
+// console.log(generalizeQuery(inputStr));
 
-console.log(generalizeQuery(inputStr, {maxVars: 0}));
+// console.log(generalizeQuery(inputStr, {maxVars: 0}));
 
-console.log(generalizeQuery(inputStr, {maxVars: 1}));
+// console.log(generalizeQuery(inputStr, {maxVars: 1}));
 
-console.log(generalizeQuery(inputStr, {maxVars: 2}));
+// console.log(generalizeQuery(inputStr, {maxVars: 2}));

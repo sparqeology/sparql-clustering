@@ -1,74 +1,18 @@
-import fs from "fs";
+import fs from 'fs';
+
+import {pipeline} from 'stream';
 
 import { stringify } from 'csv-stringify';
 import { parse } from 'csv-parse';
-// import JisonLex from 'jison-lex';
-import {Parser} from 'sparqljs';
+import generalizeQuery from './generalizeQuery.js';
 
-import lineColumn from 'line-column';
+// const queriesInputStream = fs.createReadStream('./output/queries.csv');
+const queriesInputStream = fs.createReadStream('./output/someQueries.csv');
 
-const queriesInputStream = fs.createReadStream('./output/queries.csv');
+const limit = 10000000000;
+var queryCount = 0;
 
-const sparqlParser = new Parser();
-var parsedQuery = sparqlParser.parse(
-  'PREFIX foaf: <http://xmlns.com/foaf/0.1/> ' +
-  'SELECT * { ?mickey foaf:name "Mickey Mouse"@en; foaf:knows ?other. }');
-
-// const grammar = fs.readFileSync('./parser/parser.jison', 'utf8');
-
-// // generate source
-// // const lexerSource = JisonLex.generate(grammar);
-
-// // create a parser in memory
-// var lexer = new JisonLex(grammar);
-
-// // generate source
-// var lexerSource = JisonLex.generate(grammar);
-// console.log(lexerSource);
-
-const inputStr = `
-
-
-SELECT * WHERE {
-  
-  ?s ?p
-  ?o
-}
-
-
-`;
-
-const lcFinder = lineColumn(inputStr);
-
-const lexer = sparqlParser.lexer;
-lexer.setInput(inputStr);
-console.log(lexer.lex());
-// console.log(lexer.next());
-console.log(lexer.showPosition());
-console.log(lexer.match);
-console.log(lexer.yylineno);
-const loc = lexer.yylloc;
-console.log(loc);
-console.log(lcFinder.toIndex(loc.first_line, loc.first_column + 1));
-console.log(lcFinder.toIndex(loc.last_line, loc.last_column + 1));
-console.log(lexer.yytext);
-console.log(lexer.yyleng);
-
-console.log(lexer.lex());
-console.log(lexer.showPosition());
-console.log(lexer.match);
-console.log(lexer.yylineno);
-const loc2 = lexer.yylloc;
-console.log(loc2);
-console.log(lcFinder.toIndex(loc2.first_line, loc2.first_column + 1));
-console.log(lcFinder.toIndex(loc2.last_line, loc2.last_column + 1));
-console.log(lexer.yytext);
-console.log(lexer.yyleng);
-
-// console.log(sparqlParser.terminals_);
-console.log(sparqlParser.yy);
-
-console.log(sparqlParser.trace())
+const paramQueryMap = {};
 
 // const queriesOutputStream = fs.createWriteStream('./output/queries.csv');
 
@@ -78,13 +22,46 @@ const parser = parse({
 
 parser.on('readable', function(){
     let record;
-    while ((record = parser.read()) !== null) {
-        console.log(record);
+    while ((limit === undefined || queryCount < limit) && (record = parser.read()) !== null) {
+      const id = record[0];
+      const query = record[1];
+      // console.log(query);
+      const paramQueries = generalizeQuery(query, {maxVars: 3});
+      paramQueries.shift(); // skip first item, which is the query itself
+      // console.log(paramQueries);
+      paramQueries.forEach(paramQuery => {
+        if (! (paramQuery.query in paramQueryMap)) {
+          paramQueryMap[paramQuery.query] = [];
+        }
+        paramQueryMap[paramQuery.query].push({
+          originalQueryId: id,
+          originalQuery: query,
+          bindings: paramQuery.paramBindings
+        });
+      });
+      queryCount++;
     }
-  });
+    if (limit !== undefined && queryCount >= limit) {
+      queriesInputStream.close();
+      parser.emit('end');
+      parser.end();
+    }
+});
 
 parser.on('error', function(err){
     console.error(err.message);
 });
+
+parser.on('end', () => {
+  const outputParamQueryMap = Object.fromEntries(
+      Object.entries(paramQueryMap)
+      .filter(([k,v]) => (v.length > 1)));
+      // TODO: add filter excluding when one of the bound vars is a constant
+  // const outputParamQueryMap = paramQueryMap;
+  // console.log(outputParamQueryMap);
+  fs.writeFileSync('./output/paramQueries.json', JSON.stringify(outputParamQueryMap, null, 2), 'utf8');
+});
   
-// queriesInputStream.pipe(parser);
+queriesInputStream.pipe(parser);
+
+// pipeline(queriesInputStream, parser);
