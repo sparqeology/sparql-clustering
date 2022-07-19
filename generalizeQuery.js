@@ -41,35 +41,67 @@ export default function generalizeQuery(queryStr, options = {}) {
     var symbol;
     var prevStrEnd = 0;
     var parents = [{query: '', paramBindings: []}];
+    var globalIndex = 0;
     while((symbol = lexer.lex()) !== EOF) {
-        // console.log(symbol);
-        // console.log(sparqlParser.terminals_[symbol]);
-        // console.log(lexer.match);
         const loc = lexer.yylloc;
         const strStart = lcFinder.toIndex(loc.first_line, loc.first_column + 1);
         if (strStart > prevStrEnd) {
-            parents = parents.map(parent => ({ query: parent.query + queryStr.substring(prevStrEnd, strStart), paramBindings: parent.paramBindings}))
+            parents = parents.map(parent => ({
+                query: parent.query + queryStr.substring(prevStrEnd, strStart),
+                paramBindings: parent.paramBindings,
+                setBitmap: parent.setBitmap
+            }))
         }
         if (QUERY_SYMBOLS.includes(sparqlParser.terminals_[symbol])) {
             afterPreamble = true;
-            parents = parents.map(parent => ({ query: parent.query + lexer.match, paramBindings: parent.paramBindings}))
+            parents = parents.map(parent => ({
+                query: (options.excludePreamble ? '' : parent.query) + lexer.match,
+                paramBindings: parent.paramBindings,
+                setBitmap: 0
+            }))
         } else if (afterPreamble
                 && (options.maxVars === undefined || options.maxVars )
                 && GENERALIZABLE_SYMBOLS.includes(sparqlParser.terminals_[symbol])) {
-            const parentsNoGen = parents.map(parent => ({ query: parent.query + lexer.match, paramBindings: parent.paramBindings}));
+            const parentsNoGen = parents.map(parent => ({
+                query: parent.query + lexer.match,
+                paramBindings: parent.paramBindings,
+                setBitmap: parent.setBitmap
+            }));
             const parentsToGen = options.maxVars === undefined ? parents : parents.filter(parent => parent.paramBindings.length < options.maxVars);
             const parentsGen = parentsToGen.map(parent => ({
                 query: parent.query + '<PARAM_' + parent.paramBindings.length + '>',
-                paramBindings: parent.paramBindings.concat([lexer.match])
+                paramBindings: parent.paramBindings.concat([lexer.match]),
+                setBitmap: parent.setBitmap + (2 ** globalIndex)
             }));
             parents = parentsNoGen.concat(parentsGen);
+            globalIndex++;
         } else {
-            parents = parents.map(parent => ({ query: parent.query + lexer.match, paramBindings: parent.paramBindings}))
+            parents = parents.map(parent => ({ query: parent.query + lexer.match, paramBindings: parent.paramBindings, setBitmap: parent.setBitmap}))
         }
         prevStrEnd = lcFinder.toIndex(loc.last_line, loc.last_column + 1);
-        // console.log('prevStrEnd: ' + prevStrEnd);
     }
-    parents = parents.map(parent => ({ query: parent.query + queryStr.substring(prevStrEnd), paramBindings: parent.paramBindings}))
+    parents = parents.map(parent => ({
+        query: parent.query + queryStr.substring(prevStrEnd),
+        paramBindings: parent.paramBindings,
+        setBitmap: parent.setBitmap
+    }));
+    parents = options.generalizationTree ?
+            parents.map(parent => ({
+                query: parent.query,
+                paramBindings: parent.paramBindings,
+                moreGeneralQueries: parents.filter(paramQuery => {
+                    if ((paramQuery.setBitmap | parent.setBitmap) === paramQuery.setBitmap) {
+                        const diff = paramQuery.setBitmap & ~parent.setBitmap
+                        return diff > 0 && !(diff & (diff - 1));
+                    } else {
+                        return false;
+                    }
+                }).map(paramQuery => paramQuery.query)
+            })) :
+            parents.map(parent => ({
+                query: parent.query,
+                paramBindings: parent.paramBindings
+            }))
     return parents;
 }
 
@@ -92,4 +124,4 @@ export default function generalizeQuery(queryStr, options = {}) {
 
 // console.log(generalizeQuery(inputStr, {maxVars: 1}));
 
-// console.log(generalizeQuery(inputStr, {maxVars: 2}));
+// console.log(generalizeQuery(inputStr, {maxVars: 2, generalizationTree: true}));

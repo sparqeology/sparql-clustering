@@ -1,44 +1,41 @@
 import fs from 'fs';
 
-import {pipeline} from 'stream';
-
-import { stringify } from 'csv-stringify';
 import { parse } from 'csv-parse';
-import generalizeQuery from './generalizeQuery.js';
+import generalizeAndAggregate from './generalizeAndAggregate.js';
 
-// const queriesInputStream = fs.createReadStream('./output/queries.csv');
-const queriesInputStream = fs.createReadStream('./output/someQueries.csv');
+const queriesInputStream = fs.createReadStream('./output/queries.csv');
+// const queriesInputStream = fs.createReadStream('./output/someQueries.csv');
 
 const limit = 10000000000;
 var queryCount = 0;
-
-const paramQueryMap = {};
-
-// const queriesOutputStream = fs.createWriteStream('./output/queries.csv');
 
 const parser = parse({
     delimiter: ','
 });
 
+const eventListeners = {};
+
+const aggregatePromise = generalizeAndAggregate({
+  on: (event, callback) => {
+    if (!(event in eventListeners)) {
+      eventListeners[event] = [];
+    }
+    eventListeners[event].push(callback);
+  }
+}, {maxVars: 3, excludePreamble: true, generalizationTree: true, countInstances: true});
+
+function emitEvent(event, payload) {
+  if (event in eventListeners) {
+    eventListeners[event].forEach(callback => {
+      callback(payload);
+    })
+  }
+}
+
 parser.on('readable', function(){
     let record;
     while ((limit === undefined || queryCount < limit) && (record = parser.read()) !== null) {
-      const id = record[0];
-      const query = record[1];
-      // console.log(query);
-      const paramQueries = generalizeQuery(query, {maxVars: 3});
-      paramQueries.shift(); // skip first item, which is the query itself
-      // console.log(paramQueries);
-      paramQueries.forEach(paramQuery => {
-        if (! (paramQuery.query in paramQueryMap)) {
-          paramQueryMap[paramQuery.query] = [];
-        }
-        paramQueryMap[paramQuery.query].push({
-          originalQueryId: id,
-          originalQuery: query,
-          bindings: paramQuery.paramBindings
-        });
-      });
+      emitEvent('data', {id: record[0], text: record[1]})
       queryCount++;
     }
     if (limit !== undefined && queryCount >= limit) {
@@ -53,15 +50,13 @@ parser.on('error', function(err){
 });
 
 parser.on('end', () => {
-  const outputParamQueryMap = Object.fromEntries(
-      Object.entries(paramQueryMap)
-      .filter(([k,v]) => (v.length > 1)));
-      // TODO: add filter excluding when one of the bound vars is a constant
-  // const outputParamQueryMap = paramQueryMap;
-  // console.log(outputParamQueryMap);
-  fs.writeFileSync('./output/paramQueries.json', JSON.stringify(outputParamQueryMap, null, 2), 'utf8');
+  emitEvent('end');
 });
   
 queriesInputStream.pipe(parser);
 
-// pipeline(queriesInputStream, parser);
+aggregatePromise.then(result => {
+  fs.writeFileSync('./output/queryTree.json', JSON.stringify(result, null, 2), 'utf8');
+}, err => {
+  console.error(err);
+});
