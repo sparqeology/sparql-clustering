@@ -1,6 +1,3 @@
-import fs from "fs";
-
-import { parse } from 'csv-parse';
 import {Parser} from 'sparqljs';
 
 import lineColumn from 'line-column';
@@ -32,7 +29,24 @@ const GENERALIZABLE_SYMBOLS = [
 
 const EOF = 6;
 
-export default function generalizeQuery(queryStr, options = {}) {
+
+
+/**
+ * Creates generalized versions of a SPARQL query, replacing each time some of the constants (URIs or literals) with named placeholders (parameters 1,2, ...).
+ * All the possible generalized versions are created.
+ *
+ * @param {string} queryStr SPARQL query string.
+ * @param {Object} options
+ * @param {boolean} options.excludePreamble exclude the query preamble when generating the generalizations.
+ * @param {number} options.maxVars maximum number of parameters (replaced constants).
+ * @param {number} options.generalizationTree for each parametric query generated, generates also the array of parametric queries in the set that are more general than the current one.
+ * @return {{
+ *    query: string,
+ *    paramBindings: string [],
+ *    moreGeneralQueries?: string []
+ * } []} array of parametric queries associated to the corresponding binding (replacemente of parameters) leading bakc to the original query.
+ */
+ export default function generalizeQuery(queryStr, options = {}) {
     const sparqlParser = new Parser();
     const lexer = sparqlParser.lexer;
     lexer.setInput(queryStr);
@@ -107,6 +121,15 @@ export default function generalizeQuery(queryStr, options = {}) {
 
 
 // const inputStr = `
+// PREFIX  bio2rdf: <http://bio2rdf.org/>
+
+// SELECT  ?mesh
+// WHERE
+//   { ?obo_voc  bio2rdf:obo_vocabulary:x-umls_cui  bio2rdf:umls:C1314417 ;
+//               bio2rdf:obo_vocabulary:x-mesh_dui  ?mesh
+//     FILTER ( ! isLiteral(bio2rdf:umls:C1314417) )
+//   }
+// `;
 
 // PREFIX foaf: <http://xmlns.com/foaf/0.1/> 
 

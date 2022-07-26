@@ -4,7 +4,7 @@ import { parse } from 'csv-parse';
 import generalizeAndAggregate from './generalizeAndAggregate.js';
 
 const queriesInputStream = fs.createReadStream('./output/queries.csv');
-// const queriesInputStream = fs.createReadStream('./output/someQueries.csv');
+// const queriesInputStream = fs.createReadStream('./output/meshQueries.csv');
 
 const limit = 10000000000;
 var queryCount = 0;
@@ -22,7 +22,9 @@ const aggregatePromise = generalizeAndAggregate({
     }
     eventListeners[event].push(callback);
   }
-}, {maxVars: 3, excludePreamble: true, generalizationTree: true, countInstances: true});
+}, {maxVars: 3, excludePreamble: true, generalizationTree: true,
+  countInstances: true
+});
 
 function emitEvent(event, payload) {
   if (event in eventListeners) {
@@ -56,6 +58,7 @@ parser.on('end', () => {
 queriesInputStream.pipe(parser);
 
 aggregatePromise.then(result => {
+  // fs.writeFileSync('./output/queryTreeExtended.json', JSON.stringify(result, null, 2), 'utf8');
   fs.writeFileSync('./output/queryTree.json', JSON.stringify(result, null, 2), 'utf8');
 }, err => {
   console.error(err);

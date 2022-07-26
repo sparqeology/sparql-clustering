@@ -5,12 +5,12 @@ function buildGeneralizationForestFromQuery(queryText, queryDict, mappedQueries,
         if (!(queryText in mappedQueries)) {
             // const queryGeneralizations = queryDict[queryText].generalizations;
             const {generalizations: generalizations, ...queryObj} = { ...queryDict[queryText], specializations: {}};
-            if (generalizations.length > 0) {
-                generalizations.forEach(generalization => {
-                    const generalizationObj = buildGeneralizationForestFromQuery(generalization, queryDict, mappedQueries, queryForest);
-                    if (generalizationObj) {
-                        generalizationObj.specializations[queryText] = queryObj;
-                    }
+            const generalizationObjs = generalizations
+                    .map(generalization => buildGeneralizationForestFromQuery(generalization, queryDict, mappedQueries, queryForest))
+                    .filter(generalization => generalization !== null);
+            if (generalizationObjs.length > 0) {
+                generalizationObjs.forEach(generalizationObj => {
+                    generalizationObj.specializations[queryText] = queryObj;
                 })
             } else {
                 queryForest[queryText] = queryObj;
@@ -38,7 +38,6 @@ export default async function generalizeAndAggregate(source, options = {}) {
         source.on('data', query => {
             const paramQueries = generalizeQuery(query.text, options);
             paramQueries.shift(); // skip first item, which is the query itself
-            // console.log(paramQueries);
             paramQueries.forEach(paramQuery => {
               if (! (paramQuery.query in paramQueryMap)) {
                 paramQueryMap[paramQuery.query] =
