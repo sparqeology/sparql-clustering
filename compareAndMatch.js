@@ -3,14 +3,21 @@ import fs from 'fs';
 import { parse } from 'csv-parse';
 import generalizeAndAggregate from './generalizeAndAggregate.js';
 
-const queriesInputStream = fs.createReadStream('./output/queries.csv');
+// const queriesInputStream = fs.createReadStream('./output/queries.csv');
+const queriesInputStream = fs.createReadStream('./output/queriesFromEP.csv');
 // const queriesInputStream = fs.createReadStream('./output/meshQueries.csv');
 
 const limit = 10000000000;
 var queryCount = 0;
 
 const parser = parse({
-    delimiter: ','
+    delimiter: ',',
+    columns: true,
+    cast: (value, context) => {
+      if (context.header) return value;
+      if (context.column.startsWith('numOf')) return Number(value);
+      return String(value);
+    }
 });
 
 const eventListeners = {};
@@ -37,7 +44,7 @@ function emitEvent(event, payload) {
 parser.on('readable', function(){
     let record;
     while ((limit === undefined || queryCount < limit) && (record = parser.read()) !== null) {
-      emitEvent('data', {id: record[0], text: record[1]})
+      emitEvent('data', record)
       queryCount++;
     }
     if (limit !== undefined && queryCount >= limit) {
@@ -58,8 +65,8 @@ parser.on('end', () => {
 queriesInputStream.pipe(parser);
 
 aggregatePromise.then(result => {
-  // fs.writeFileSync('./output/queryTreeExtended.json', JSON.stringify(result, null, 2), 'utf8');
-  fs.writeFileSync('./output/queryTree.json', JSON.stringify(result, null, 2), 'utf8');
+  // fs.writeFileSync('./output/queryTreeExtended2.json', JSON.stringify(result, null, 2), 'utf8');
+  fs.writeFileSync('./output/queryTree2.json', JSON.stringify(result, null, 2), 'utf8');
 }, err => {
   console.error(err);
 });

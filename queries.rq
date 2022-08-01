@@ -1,0 +1,33 @@
+PREFIX lsqr: <http://lsq.aksw.org/>
+PREFIX lsqv: <http://lsq.aksw.org/vocab#>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+
+# Query: outgoing 
+#
+# lsqv:text
+# lsqv:hash
+# lsqv:hasLocalExec
+# lsqv:hasSpin
+# lsqv:hasRemoteExec
+# lsqv:hasStructuralFeatures
+
+# Query: ingoing 
+#
+# lsqv:extensionQuery
+
+# Exec: outgoing 
+#
+# prov:atTime
+# lsqv:endpoint
+# lsqv:hostHash
+# lsqv:uri
+
+SELECT ?id ?text (COUNT(?exec) AS ?numOfExecutions) (COUNT(DISTINCT ?host) AS ?numOfHosts)
+WHERE {
+  ?query lsqv:hash ?id;
+         lsqv:text ?text;
+         lsqv:hasRemoteExec ?exec.
+  ?exec lsqv:hostHash ?host.
+}
+GROUP BY ?id ?text
+#LIMIT 25

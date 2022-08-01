@@ -53,7 +53,9 @@ export default async function generalizeAndAggregate(source, options = {}) {
               paramQueryMap[paramQuery.query].instances.push({
                 originalQueryId: query.id,
                 // originalQuery: query.text,
-                bindings: paramQuery.paramBindings
+                bindings: paramQuery.paramBindings,
+                numOfExecutions: query.numOfExecutions,
+                numOfHosts: query.numOfHosts
               });
             });
         });
@@ -71,7 +73,10 @@ export default async function generalizeAndAggregate(source, options = {}) {
                 outputParamQueryMap = Object.fromEntries(
                     Object.entries(outputParamQueryMap)
                             .map(([k,v]) => ([k, {
-                                ...v, instances: v.instances.length
+                                ...v,
+                                instances: v.instances.length,
+                                numOfExecutions: v.instances.reduce((sum, instance) => sum + instance.numOfExecutions, 0),
+                                numOfHosts: v.instances.reduce((sum, instance) => sum + instance.numOfHosts, 0)
                             }]))
                 );
             }
