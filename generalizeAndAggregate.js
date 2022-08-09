@@ -3,7 +3,6 @@ import generalizeQuery from './generalizeQuery.js';
 function buildGeneralizationForestFromQuery(queryText, queryDict, mappedQueries, queryForest) {
     if (queryText in queryDict) {
         if (!(queryText in mappedQueries)) {
-            // const queryGeneralizations = queryDict[queryText].generalizations;
             const {generalizations: generalizations, ...queryObj} = { ...queryDict[queryText], specializations: {}};
             const generalizationObjs = generalizations
                     .map(generalization => buildGeneralizationForestFromQuery(generalization, queryDict, mappedQueries, queryForest))
@@ -32,62 +31,108 @@ function buildGeneralizationForest(queryDict) {
     return queryForest;
 }
 
-export default async function generalizeAndAggregate(source, options = {}) {
+export default async function generalizeAndAggregate(queryStream, options = {}) {
     const paramQueryMap = {};
-    return new Promise((resolve, reject) => {
-        source.on('data', query => {
-            const paramQueries = generalizeQuery(query.text, options);
+    for await (const query of queryStream) {
+        const paramQueries = generalizeQuery(query.text, options);
+        if (!options.includeSimpleQueries) {
             paramQueries.shift(); // skip first item, which is the query itself
-            paramQueries.forEach(paramQuery => {
-              if (! (paramQuery.query in paramQueryMap)) {
-                paramQueryMap[paramQuery.query] =
-                        options.generalizationTree ?
-                            {
-                                instances: [],
-                                generalizations: paramQuery.moreGeneralQueries 
-                            } :
-                            {
-                                instances: []
-                            };
-              }
-              paramQueryMap[paramQuery.query].instances.push({
-                originalQueryId: query.id,
-                // originalQuery: query.text,
-                bindings: paramQuery.paramBindings,
-                numOfExecutions: query.numOfExecutions,
-                numOfHosts: query.numOfHosts
-              });
-            });
+        }
+        paramQueries.forEach(paramQuery => {
+          if (! (paramQuery.query in paramQueryMap)) {
+            paramQueryMap[paramQuery.query] =
+                    options.generalizationTree ?
+                        {
+                            instances: [],
+                            generalizations: paramQuery.moreGeneralQueries 
+                        } :
+                        {
+                            instances: []
+                        };
+          }
+          paramQueryMap[paramQuery.query].instances.push({
+            originalQueryId: query.id,
+            // originalQuery: query.text,
+            bindings: paramQuery.paramBindings,
+            numOfExecutions: query.numOfExecutions,
+            numOfHosts: query.numOfHosts
+          });
         });
-        source.on('end', () => {
-            var outputParamQueryMap = Object.fromEntries(
-                Object.entries(paramQueryMap)
-                        .filter(([k,v]) => (v.instances.length > 1))
-                        .filter(([k,v]) => (
-                                v.instances.map(paramQuery => paramQuery.bindings)
-                                .reduce((fixedBindings, currBindings) => fixedBindings.map((fixed, index) => currBindings[index] === fixed ? fixed : null))
-                                .every(value => value === null)
-                        ))
-            );
-            if (options.countInstances) {
-                outputParamQueryMap = Object.fromEntries(
-                    Object.entries(outputParamQueryMap)
-                            .map(([k,v]) => ([k, {
+    }
+    var outputParamQueryMap = Object.fromEntries(
+        Object.entries(paramQueryMap)
+                .filter(([k,v]) => {
+                    const bindingsArray = v.instances.map(query => query.bindings);
+                    const numOfBindings = bindingsArray.length;
+                    const maxEqualBindings = options.minBindingDivergenceRatio ? (1.0 - options.minBindingDivergenceRatio) * numOfBindings : numOfBindings - 1;
+                    return (bindingsArray
+                            .reduce(
+                                    (bindingsDistribution, currBindings) => bindingsDistribution.map((bindingDistr, index) => {
+                                        bindingDistr[currBindings[index]] = (currBindings[index] in bindingDistr ? bindingDistr[currBindings[index]] : 0) + 1;
+                                        return bindingDistr;
+                                    }),
+                                    numOfBindings > 0 ? bindingsArray[0].map(binding => ({})) : []
+                            )
+                            .every(bindingDistr => Object.values(bindingDistr).every(bindingCount => bindingCount <= maxEqualBindings)));
+                })
+    );
+    if (options.showBindingDistributions) {
+        outputParamQueryMap = Object.fromEntries(
+            Object.entries(outputParamQueryMap)
+                    .map(([k,v]) => {
+                        const bindingsArray = v.instances.map(query => query.bindings);
+                        const numOfBindings = bindingsArray.length;
+                        const maxEqualBindings = options.minBindingDivergenceRatio ? (1.0 - options.minBindingDivergenceRatio) * numOfBindings : numOfBindings - 1;
+                        return [
+                            k,
+                            {
                                 ...v,
-                                instances: v.instances.length,
-                                numOfExecutions: v.instances.reduce((sum, instance) => sum + instance.numOfExecutions, 0),
-                                numOfHosts: v.instances.reduce((sum, instance) => sum + instance.numOfHosts, 0)
-                            }]))
-                );
-            }
-            if (options.generalizationTree) {
-                outputParamQueryMap = buildGeneralizationForest(outputParamQueryMap);
-            }
-            resolve(outputParamQueryMap);
-        });
-        source.on('error', err => {
-            reject(err);
-        });
-    });
+                                maxEqualBindings,
+                                bindingDistribution:
+                                        bindingsArray
+                                                .reduce(
+                                                        (bindingsDistribution, currBindings) => bindingsDistribution.map((bindingDistr, index) => {
+                                                            bindingDistr[currBindings[index]] = (currBindings[index] in bindingDistr ? bindingDistr[currBindings[index]] : 0) + 1;
+                                                            return bindingDistr;
+                                                        }),
+                                                        numOfBindings > 0 ? bindingsArray[0].map(binding => ({})) : []),
+                            },
+                        ];
+                    })
+        );   
+    }
+    if (options.minNumOfInstances) {
+        outputParamQueryMap = Object.fromEntries(
+            Object.entries(outputParamQueryMap)
+                    .filter(([k,v]) => (v.instances.length >= options.minNumOfInstances))
+        );    
+    }
+    if (options.minNumOfExecutions) {
+        outputParamQueryMap = Object.fromEntries(
+            Object.entries(outputParamQueryMap)
+                    .filter(([k,v]) => (v.instances.reduce((sum, instance) => sum + instance.numOfExecutions, 0) >= options.minNumOfExecutions))
+        );    
+    }
+    if (options.minNumOfHosts) {
+        outputParamQueryMap = Object.fromEntries(
+            Object.entries(outputParamQueryMap)
+                    .filter(([k,v]) => (v.instances.reduce((sum, instance) => sum + instance.numOfHosts, 0) >= options.minNumOfHosts))
+        );    
+    }
+    if (options.countInstances) {
+        outputParamQueryMap = Object.fromEntries(
+            Object.entries(outputParamQueryMap)
+                    .map(([k,v]) => ([k, {
+                        ...v,
+                        instances: v.instances.length,
+                        numOfExecutions: v.instances.reduce((sum, instance) => sum + instance.numOfExecutions, 0),
+                        numOfHosts: v.instances.reduce((sum, instance) => sum + instance.numOfHosts, 0)
+                    }]))
+        );
+    }
+    if (options.generalizationTree) {
+        outputParamQueryMap = buildGeneralizationForest(outputParamQueryMap);
+    }
+    return outputParamQueryMap;
 }
 
