@@ -66,7 +66,7 @@ const EOF = 6;
                 setBitmap: parent.setBitmap
             }))
         }
-        if (QUERY_SYMBOLS.includes(sparqlParser.terminals_[symbol])) {
+        if (!afterPreamble && QUERY_SYMBOLS.includes(sparqlParser.terminals_[symbol])) {
             afterPreamble = true;
             parents = parents.map(parent => ({
                 query: (options.excludePreamble ? '' : parent.query) + lexer.match,
