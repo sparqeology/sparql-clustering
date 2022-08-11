@@ -1,7 +1,9 @@
 import fs from 'fs';
 
 import { parse } from 'csv-parse';
+
 import generalizeAndAggregate from './generalizeAndAggregate.js';
+import tee from './tee.js'
 
 const queriesInputStream = fs.createReadStream('./input/clustered_queries/clusters.csv');
 
@@ -16,7 +18,8 @@ const parser = parse({
 });
 
 async function* filterStreamByGroup(inputStream, groupId) {
-    [mainStream, localStream] = inputStream.tee();
+    const [localStream, mainStream] = tee(inputStream);
+    console.log('group:' + groupId);
     for await (const record of localStream) {
         if (record.groupId === groupId) {
             yield record.query;
@@ -25,20 +28,46 @@ async function* filterStreamByGroup(inputStream, groupId) {
 }
 
 async function* splitStreamByGroups(inputStream) {
-    // [mainStream, localStream] = inputStream.tee();
-    const streams = inputStream.tee();
-    const mainStream = streams[0];
-    const localStream = streams[1];
+    var [localStream, mainStream] = tee(inputStream);
     const groupMap = {};
     for await (const record of localStream) {
         if (!(record.groupId in groupMap)) {
             groupMap[record.groupId] = true;
+            var [mainStream, streamCopy] = tee(mainStream);
             yield {
                 groupId: record.groupId,
-                queryStream: filterStreamByGroup(mainStream, record.groupId)
+                queryStream: filterStreamByGroup(streamCopy, record.groupId)
             };
         }
     }
+}
+
+async function* map(inputGenerator, fn) {
+    for await (const data of inputGenerator) {
+        yield fn(data);
+    }
+}
+
+async function generalizeByCluster(globalStream, options) {
+    const clusterStream = splitStreamByGroups(globalStream);
+    const paramQueriesByCluster = {};
+    for await (const cluster of clusterStream) {
+        console.log('****************************************');
+        console.log('**** Group ' + cluster.groupId + ' *****');
+        console.log('****************************************');
+        console.log('');
+        const queryObjStream = map(cluster.queryStream, query => ({
+            text: query,
+            numOfExecutions: 1,
+            numOfHosts: 1
+        }));
+        paramQueriesByCluster['group_' + cluster.groupId] = await generalizeAndAggregate(queryObjStream, options);
+        // for await (const query of queryObjStream) {
+        //     console.log(query);
+        // }
+    }
+    // console.log(paramQueriesByCluster);
+    return paramQueriesByCluster;
 }
 
 // const aggregatePromise = generalizeAndAggregate(parser, {
@@ -53,34 +82,24 @@ async function* splitStreamByGroups(inputStream) {
 // });
   
 // const clusterStream = splitStreamByGroups(queriesInputStream.pipe(parser));
-const clusterStream = splitStreamByGroups(queriesInputStream);
+
+queriesInputStream.pipe(parser);
 
 async function main() {
-    for await (const cluster of clusterStream) {
-        console.log('****************************************');
-        console.log('**** Group ' + cluster.groupId + ' *****');
-        console.log('****************************************');
-        console.log('');
-        for await (const query of cluster.queryStream) {
-            console.log(query);
-        }
-    }
+    const paramQueriesByCluster = await generalizeByCluster(parser, {
+        maxVars: 3,
+        excludePreamble: true,
+        generalizationTree: true,
+        onlyRoots: true,
+        includeSimpleQueries: true,
+        countInstances: true,
+        minBindingDivergenceRatio: 0.05
+    });
+    fs.writeFileSync('./output/queryRootsByCluster_10.json', JSON.stringify(paramQueriesByCluster, null, 2), 'utf8');
 }
 
-// aggregatePromise.then(result => {
-//     // fs.writeFileSync('./output/queryTreeExtended2.json', JSON.stringify(result, null, 2), 'utf8');
-//     // fs.writeFileSync('./output/queryTree_10_50.json', JSON.stringify(result, null, 2), 'utf8');
-//     fs.writeFileSync('./output/queryTree_10_50_bis.json', JSON.stringify(result, null, 2), 'utf8');
-//     // fs.writeFileSync('./output/queryTreeExtended_10_50.json', JSON.stringify(result, null, 2), 'utf8');
-// }, err => {
-//     console.error(err);
-// });
-
 main().then(result => {
-    // fs.writeFileSync('./output/queryTreeExtended2.json', JSON.stringify(result, null, 2), 'utf8');
-    // fs.writeFileSync('./output/queryTree_10_50.json', JSON.stringify(result, null, 2), 'utf8');
     console.log('OK');
-    // fs.writeFileSync('./output/queryTreeExtended_10_50.json', JSON.stringify(result, null, 2), 'utf8');
 }, err => {
     console.error(err);
 });

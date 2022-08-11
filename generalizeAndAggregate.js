@@ -35,6 +35,7 @@ export default async function generalizeAndAggregate(queryStream, options = {}) 
     const paramQueryMap = {};
     for await (const query of queryStream) {
         const paramQueries = generalizeQuery(query.text, options);
+        // console.log(paramQueries);
         if (!options.includeSimpleQueries) {
             paramQueries.shift(); // skip first item, which is the query itself
         }
@@ -132,6 +133,15 @@ export default async function generalizeAndAggregate(queryStream, options = {}) 
     }
     if (options.generalizationTree) {
         outputParamQueryMap = buildGeneralizationForest(outputParamQueryMap);
+        if (options.onlyRoots) {
+            outputParamQueryMap = Object.fromEntries(
+                Object.entries(outputParamQueryMap)
+                        .map(([paramQuery, paramQueryDataAndSpecializations]) => {
+                            const {specializations, ...paramQueryData} = paramQueryDataAndSpecializations;
+                            return [paramQuery, paramQueryData];
+                        })
+            );
+        }
     }
     return outputParamQueryMap;
 }
