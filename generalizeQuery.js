@@ -67,7 +67,9 @@ class Tokenizer {
                 }
             }
         } else if (this.GENERALIZABLE_SYMBOLS.includes(symbol)) {
-            if (this.STRING_LITERAL_SYMBOLS.includes(symbol) && this.STRING_LITERAL_FOLLOWUP_SYMBOLS.includes(this.lexer.nextSymbol)) {
+            if (this.options.sparqlParameters &&
+                this.STRING_LITERAL_SYMBOLS.includes(symbol) &&
+                this.STRING_LITERAL_FOLLOWUP_SYMBOLS.includes(this.lexer.nextSymbol)) {
                 const str = this.lexer.match;
                 const nextSymbol = this.lexer.lex();
                 if (nextSymbol === this.DATATYPE_SYMBOL) {
@@ -92,8 +94,10 @@ class Tokenizer {
     }
 }
 
-function generateParameterLabel(parameterIndex) {
-    return '$__PARAM_' + parameterIndex;
+function generateParameterLabel(parameterIndex, options) {
+    return options.sparqlParameters ?
+            '$__PARAM_' + parameterIndex :
+            '<PARAM_' + parameterIndex + '>';
 }
 
 /**
@@ -127,7 +131,7 @@ function generateParameterLabel(parameterIndex) {
             }));
             const parentsToGen = options.maxVars === undefined ? parents : parents.filter(parent => parent.paramBindings.length < options.maxVars);
             const parentsGen = parentsToGen.map(parent => ({
-                query: parent.query + generateParameterLabel(parent.paramBindings.length),
+                query: parent.query + generateParameterLabel(parent.paramBindings.length, options),
                 paramBindings: parent.paramBindings.concat([tokenizerResult.match]),
                 setBitmap: parent.setBitmap + (2 ** globalIndex)
             }));
@@ -158,16 +162,16 @@ function generateParameterLabel(parameterIndex) {
 }
 
 
-const inputStr = `
-PREFIX foaf: <http://xmlns.com/foaf/0.1/> 
+// const inputStr = `
+// PREFIX foaf: <http://xmlns.com/foaf/0.1/> 
 
-SELECT * {
-    ?mickey foaf:name "Mickey Mouse"@en
-#        foaf:knows ?other.
-}
+// SELECT * {
+//     ?mickey foaf:name "Mickey Mouse"@en
+// #        foaf:knows ?other.
+// }
 
 
-`;
+// `;
 
 // PREFIX  bio2rdf: <http://bio2rdf.org/>
 
@@ -179,4 +183,4 @@ SELECT * {
 //   }
 // `;
 
-console.log(generalizeQuery(inputStr));
+// console.log(generalizeQuery(inputStr, {sparqlParameters: true}));
