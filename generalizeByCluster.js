@@ -87,7 +87,7 @@ queriesInputStream.pipe(parser);
 
 async function main() {
     const paramQueriesByCluster = await generalizeByCluster(parser, {
-        maxVars: 3,
+        maxVars: 5,
         excludePreamble: true,
         generalizationTree: true,
         onlyRoots: true,
@@ -95,7 +95,7 @@ async function main() {
         countInstances: true,
         minBindingDivergenceRatio: 0.05
     });
-    fs.writeFileSync('./output/queryRootsByCluster_10.json', JSON.stringify(paramQueriesByCluster, null, 2), 'utf8');
+    fs.writeFileSync('./output/queryRootsByCluster.json', JSON.stringify(paramQueriesByCluster, null, 2), 'utf8');
 }
 
 main().then(result => {

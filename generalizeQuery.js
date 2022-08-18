@@ -1,35 +1,100 @@
 import {Parser} from 'sparqljs';
 
-import lineColumn from 'line-column';
+import { LookaheadLexer } from './lookaheadLexer.js';
 
-const QUERY_SYMBOLS = [
-    'SELECT',
-    'CONSTRUCT',
-    'ASK',
-    'DESCRIBE'
-];
+class Tokenizer {
+    constructor(queryStr, options = {}) {
+        const sparqlParser = new Parser();
+        this.QUERY_SYMBOLS = [
+            'SELECT',
+            'CONSTRUCT',
+            'ASK',
+            'DESCRIBE'
+        ].map(terminal => sparqlParser.symbols_[terminal]);
+        this.GENERALIZABLE_SYMBOLS = [
+            'PNAME_LN',
+            'IRIREF',
+            'INTEGER',
+            'DECIMAL',
+            'DOUBLE',
+            'INTEGER_POSITIVE',
+            'DECIMAL_POSITIVE',
+            'DOUBLE_POSITIVE',
+            'INTEGER_NEGATIVE',
+            'DECIMAL_NEGATIVE',
+            'DOUBLE_NEGATIVE',
+            'STRING_LITERAL1',
+            'STRING_LITERAL2',
+            'STRING_LITERAL_LONG1',
+            'STRING_LITERAL_LONG2'
+        ].map(terminal => sparqlParser.symbols_[terminal]);
+        this.STRING_LITERAL_SYMBOLS = [
+            'STRING_LITERAL1',
+            'STRING_LITERAL2',
+            'STRING_LITERAL_LONG1',
+            'STRING_LITERAL_LONG2'
+        ].map(terminal => sparqlParser.symbols_[terminal]);
+        this.STRING_LITERAL_FOLLOWUP_SYMBOLS = [
+            '^^',
+            'LANGTAG'
+        ].map(terminal => sparqlParser.symbols_[terminal]);
+        this.DATATYPE_SYMBOL = sparqlParser.symbols_['^^'];
+        this.LANGTAG_SYMBOL = sparqlParser.symbols_['LANGTAG'];
+        this.EOF = sparqlParser.lexer.EOF;
+        this.options = options;
+        const baseLexer = sparqlParser.lexer;
+        baseLexer.setInput(queryStr);
+        this.lexer = new LookaheadLexer(baseLexer);
+        this.afterPreamble = false;
+    }
 
-const GENERALIZABLE_SYMBOLS = [
-    'PNAME_LN',
-    'IRIREF',
-    'INTEGER',
-    'DECIMAL',
-    'DOUBLE',
-    'INTEGER_POSITIVE',
-    'DECIMAL_POSITIVE',
-    'DOUBLE_POSITIVE',
-    'INTEGER_NEGATIVE',
-    'DECIMAL_NEGATIVE',
-    'DOUBLE_NEGATIVE',
-    'STRING_LITERAL1',
-    'STRING_LITERAL2',
-    'STRING_LITERAL_LONG1',
-    'STRING_LITERAL_LONG2'
-];
+    next() {
+        const symbol = this.lexer.next();
+        if (symbol === this.EOF) {
+            return null;
+        }
+        if (!this.afterPreamble) {
+            if (this.QUERY_SYMBOLS.includes(symbol)) {
+                this.afterPreamble = true;
+                return {
+                    match: this.lexer.match,
+                    parameterizable: false
+                };
+            } else {
+                return {
+                    match: this.options.excludePreamble ? '' : this.lexer.match,
+                    parameterizable: false
+                }
+            }
+        } else if (this.GENERALIZABLE_SYMBOLS.includes(symbol)) {
+            if (this.STRING_LITERAL_SYMBOLS.includes(symbol) && this.STRING_LITERAL_FOLLOWUP_SYMBOLS.includes(this.lexer.nextSymbol)) {
+                const str = this.lexer.match;
+                const nextSymbol = this.lexer.lex();
+                if (nextSymbol === this.DATATYPE_SYMBOL) {
+                    this.lexer.lex();
+                }
+                return {
+                    match: str + this.lexer.match,
+                    parameterizable: true
+                }
+            } else {
+                return {
+                    match: this.lexer.match,
+                    parameterizable: true
+                }
+            }
+        } else {
+            return {
+                match: this.lexer.match,
+                parameterizable: false
+            }
+        }
+    }
+}
 
-const EOF = 6;
-
-
+function generateParameterLabel(parameterIndex) {
+    return '$__PARAM_' + parameterIndex;
+}
 
 /**
  * Creates generalized versions of a SPARQL query, replacing each time some of the constants (URIs or literals) with named placeholders (parameters 1,2, ...).
@@ -47,58 +112,31 @@ const EOF = 6;
  * } []} array of parametric queries associated to the corresponding binding (replacemente of parameters) leading bakc to the original query.
  */
  export default function generalizeQuery(queryStr, options = {}) {
-    const sparqlParser = new Parser();
-    const lexer = sparqlParser.lexer;
-    lexer.setInput(queryStr);
-    const lcFinder = lineColumn(queryStr);
-    var afterPreamble = false;
-    var symbol;
-    var prevStrEnd = 0;
-    var parents = [{query: '', paramBindings: []}];
+    const tokenizer = new Tokenizer(queryStr, options);
+    var tokenizerResult;
+    var parents = [{query: '', paramBindings: [], setBitmap: 0}];
     var globalIndex = 0;
-    while((symbol = lexer.lex()) !== EOF) {
-        const loc = lexer.yylloc;
-        const strStart = lcFinder.toIndex(loc.first_line, loc.first_column + 1);
-        if (strStart > prevStrEnd) {
-            parents = parents.map(parent => ({
-                query: parent.query + queryStr.substring(prevStrEnd, strStart),
-                paramBindings: parent.paramBindings,
-                setBitmap: parent.setBitmap
-            }))
-        }
-        if (!afterPreamble && QUERY_SYMBOLS.includes(sparqlParser.terminals_[symbol])) {
-            afterPreamble = true;
-            parents = parents.map(parent => ({
-                query: (options.excludePreamble ? '' : parent.query) + lexer.match,
-                paramBindings: parent.paramBindings,
-                setBitmap: 0
-            }))
-        } else if (afterPreamble
-                && (options.maxVars === undefined || options.maxVars )
-                && GENERALIZABLE_SYMBOLS.includes(sparqlParser.terminals_[symbol])) {
+    var tokenIndex = 0;
+    while((!options.maxTokens || tokenIndex < options.maxTokens) && (tokenizerResult = tokenizer.next()) !== null) {
+        tokenIndex++;
+        if (tokenizerResult.parameterizable) {
             const parentsNoGen = parents.map(parent => ({
-                query: parent.query + lexer.match,
+                query: parent.query + tokenizerResult.match,
                 paramBindings: parent.paramBindings,
                 setBitmap: parent.setBitmap
             }));
             const parentsToGen = options.maxVars === undefined ? parents : parents.filter(parent => parent.paramBindings.length < options.maxVars);
             const parentsGen = parentsToGen.map(parent => ({
-                query: parent.query + '<PARAM_' + parent.paramBindings.length + '>',
-                paramBindings: parent.paramBindings.concat([lexer.match]),
+                query: parent.query + generateParameterLabel(parent.paramBindings.length),
+                paramBindings: parent.paramBindings.concat([tokenizerResult.match]),
                 setBitmap: parent.setBitmap + (2 ** globalIndex)
             }));
             parents = parentsNoGen.concat(parentsGen);
             globalIndex++;
         } else {
-            parents = parents.map(parent => ({ query: parent.query + lexer.match, paramBindings: parent.paramBindings, setBitmap: parent.setBitmap}))
+            parents = parents.map(parent => ({ query: parent.query + tokenizerResult.match, paramBindings: parent.paramBindings, setBitmap: parent.setBitmap}))
         }
-        prevStrEnd = lcFinder.toIndex(loc.last_line, loc.last_column + 1);
     }
-    parents = parents.map(parent => ({
-        query: parent.query + queryStr.substring(prevStrEnd),
-        paramBindings: parent.paramBindings,
-        setBitmap: parent.setBitmap
-    }));
     parents = options.generalizationTree ?
             parents.map(parent => ({
                 query: parent.query,
@@ -120,7 +158,17 @@ const EOF = 6;
 }
 
 
-// const inputStr = `
+const inputStr = `
+PREFIX foaf: <http://xmlns.com/foaf/0.1/> 
+
+SELECT * {
+    ?mickey foaf:name "Mickey Mouse"@en
+#        foaf:knows ?other.
+}
+
+
+`;
+
 // PREFIX  bio2rdf: <http://bio2rdf.org/>
 
 // SELECT  ?mesh
@@ -131,20 +179,4 @@ const EOF = 6;
 //   }
 // `;
 
-// PREFIX foaf: <http://xmlns.com/foaf/0.1/> 
-
-// SELECT * {
-//     ?mickey foaf:name "Mickey Mouse"@en;
-//         foaf:knows ?other.
-// }
-
-
-// `;
-
-// console.log(generalizeQuery(inputStr));
-
-// console.log(generalizeQuery(inputStr, {maxVars: 0}));
-
-// console.log(generalizeQuery(inputStr, {maxVars: 1}));
-
-// console.log(generalizeQuery(inputStr, {maxVars: 2, generalizationTree: true}));
+console.log(generalizeQuery(inputStr));
