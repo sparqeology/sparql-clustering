@@ -31,6 +31,19 @@ function buildGeneralizationForest(queryDict) {
     return queryForest;
 }
 
+function queryDictionariesAsArrays(queryDictionary) {
+    if (queryDictionary === undefined) {
+        return undefined;
+    }
+    return Object.entries(queryDictionary).map(([queryText, queryData]) => {
+        return {
+            queryText,
+            specializations: queryDictionariesAsArrays(queryData.specializations),
+            ...queryData
+        };
+    })
+}
+
 export default async function generalizeAndAggregate(queryStream, options = {}) {
     const paramQueryMap = {};
     for await (const query of queryStream) {
@@ -114,21 +127,24 @@ export default async function generalizeAndAggregate(queryStream, options = {}) 
                     .filter(([k,v]) => (v.instances.reduce((sum, instance) => sum + instance.numOfExecutions, 0) >= options.minNumOfExecutions))
         );    
     }
-    if (options.minNumOfHosts) {
-        outputParamQueryMap = Object.fromEntries(
-            Object.entries(outputParamQueryMap)
-                    .filter(([k,v]) => (v.instances.reduce((sum, instance) => sum + instance.numOfHosts, 0) >= options.minNumOfHosts))
-        );    
-    }
+    // if (options.minNumOfHosts) {
+    //     outputParamQueryMap = Object.fromEntries(
+    //         Object.entries(outputParamQueryMap)
+    //                 .filter(([k,v]) => (v.instances.reduce((sum, instance) => sum + instance.numOfHosts, 0) >= options.minNumOfHosts))
+    //     );    
+    // }
     if (options.countInstances) {
         outputParamQueryMap = Object.fromEntries(
             Object.entries(outputParamQueryMap)
-                    .map(([k,v]) => ([k, {
-                        ...v,
-                        instances: v.instances.length,
-                        numOfExecutions: v.instances.reduce((sum, instance) => sum + instance.numOfExecutions, 0),
-                        numOfHosts: v.instances.reduce((sum, instance) => sum + instance.numOfHosts, 0)
-                    }]))
+                    .map(([query,queryDataWithInstances]) => {
+                        const {instances, ...queryData} = queryDataWithInstances;
+                        return ([query, {
+                            ...queryData,
+                            numOfInstances: instances.length,
+                            numOfExecutions: instances.reduce((sum, instance) => sum + instance.numOfExecutions, 0),
+                            // numOfHosts: v.instances.reduce((sum, instance) => sum + instance.numOfHosts, 0)
+                        }]);
+                    })
         );
     }
     if (options.generalizationTree) {
@@ -142,6 +158,9 @@ export default async function generalizeAndAggregate(queryStream, options = {}) 
                         })
             );
         }
+    }
+    if (options.asArray) {
+        outputParamQueryMap = queryDictionariesAsArrays(outputParamQueryMap);
     }
     return outputParamQueryMap;
 }
