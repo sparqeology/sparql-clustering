@@ -1,6 +1,7 @@
 import {Parser} from 'sparqljs';
 
 import { LookaheadLexer } from './lookaheadLexer.js';
+import getNonOverlappingFamilies from './getNonOverlappingSubsets.js';
 
 class Tokenizer {
     constructor(queryStr, options = {}) {
@@ -100,6 +101,37 @@ function generateParameterLabel(parameterIndex, options) {
             '<PARAM_' + parameterIndex + '>';
 }
 
+function buildGeneralizedQuery(queryVectorEncoding, {queryPieces, constants}, options) {
+    return queryVectorEncoding.map((item, index) => 
+            queryPieces[index] +
+            (item === -1 ? constants[index] : generateParameterLabel(item, options))
+        ).join('') + queryPieces.at(-1);
+}
+
+function buildBindings(querySubsetsEncoding, constants, options) {
+    const bindings = [];
+    return querySubsetsEncoding.map(subset => constants[subset[0]]);
+}
+
+function decomposeQuery(queryStr, options = {}) {
+    const tokenizer = new Tokenizer(queryStr, options);
+    var tokenizerResult;
+    var tokenIndex = 0;
+    const queryPieces = [''];
+    const constants = [];
+
+    while((!options.maxTokens || tokenIndex < options.maxTokens) && (tokenizerResult = tokenizer.next()) !== null) {
+        tokenIndex++;
+        if (tokenizerResult.parameterizable) {
+            constants.push(tokenizerResult.match);
+            queryPieces.push('');
+        } else {
+            queryPieces[queryPieces.length-1] += tokenizerResult.match;
+        }
+    }
+    return {queryPieces, constants};
+ }
+
 /**
  * Creates generalized versions of a SPARQL query, replacing each time some of the constants (URIs or literals) with named placeholders (parameters 1,2, ...).
  * All the possible generalized versions are created.
@@ -113,52 +145,43 @@ function generateParameterLabel(parameterIndex, options) {
  *    query: string,
  *    paramBindings: string [],
  *    moreGeneralQueries?: string []
- * } []} array of parametric queries associated to the corresponding binding (replacemente of parameters) leading bakc to the original query.
+ * } []} array of parametric queries associated to the corresponding binding (replacement of parameters) leading back to the original query.
  */
  export default function generalizeQuery(queryStr, options = {}) {
-    const tokenizer = new Tokenizer(queryStr, options);
-    var tokenizerResult;
-    var parents = [{query: '', paramBindings: [], setBitmap: 0}];
-    var globalIndex = 0;
-    var tokenIndex = 0;
-    while((!options.maxTokens || tokenIndex < options.maxTokens) && (tokenizerResult = tokenizer.next()) !== null) {
-        tokenIndex++;
-        if (tokenizerResult.parameterizable) {
-            const parentsNoGen = parents.map(parent => ({
-                query: parent.query + tokenizerResult.match,
-                paramBindings: parent.paramBindings,
-                setBitmap: parent.setBitmap
-            }));
-            const parentsToGen = options.maxVars === undefined ? parents : parents.filter(parent => parent.paramBindings.length < options.maxVars);
-            const parentsGen = parentsToGen.map(parent => ({
-                query: parent.query + generateParameterLabel(parent.paramBindings.length, options),
-                paramBindings: parent.paramBindings.concat([tokenizerResult.match]),
-                setBitmap: parent.setBitmap + (2 ** globalIndex)
-            }));
-            parents = parentsNoGen.concat(parentsGen);
-            globalIndex++;
-        } else {
-            parents = parents.map(parent => ({ query: parent.query + tokenizerResult.match, paramBindings: parent.paramBindings, setBitmap: parent.setBitmap}))
+    const {queryPieces, constants} = decomposeQuery(queryStr, options);
+    const constantPositions = {};
+    const constantsUnique = [];
+    constants.forEach((constant, constantIndex) => {
+        if (!(constant in constantPositions)) {
+            constantPositions[constant] = [];
+            constantsUnique.push(constant);
         }
+        constantPositions[constant].push(constantIndex);
+    });
+
+    const reduceTree = getNonOverlappingFamilies(
+            constantsUnique.map(constant => constantPositions[constant]),
+            {maxSubsets: options.maxVars});
+
+    if (options.generalizationTree) {
+        const generalizationTree = Object.fromEntries(Object.entries(reduceTree).map(([familyId, {vector, subsets, reductions}]) => ([
+            familyId,
+            {
+                query: buildGeneralizedQuery(vector, {queryPieces, constants}, options),
+                paramBindings: buildBindings(subsets, constants),
+                reductions
+            }
+        ])));
+        return Object.values(generalizationTree).map(({reductions, ...generalizationData}) => ({
+            moreGeneralQueries: reductions.map(reductionId => generalizationTree[reductionId].query),
+            ...generalizationData
+        }));
+    } else {
+        return Object.values(reduceTree).map(({vector, subsets}) => ({
+            query: buildGeneralizedQuery(vector, {queryPieces, constants}, options),
+            paramBindings: buildBindings(subsets, constants)
+        }));
     }
-    parents = options.generalizationTree ?
-            parents.map(parent => ({
-                query: parent.query,
-                paramBindings: parent.paramBindings,
-                moreGeneralQueries: parents.filter(paramQuery => {
-                    if ((paramQuery.setBitmap | parent.setBitmap) === paramQuery.setBitmap) {
-                        const diff = paramQuery.setBitmap & ~parent.setBitmap
-                        return diff > 0 && !(diff & (diff - 1));
-                    } else {
-                        return false;
-                    }
-                }).map(paramQuery => paramQuery.query)
-            })) :
-            parents.map(parent => ({
-                query: parent.query,
-                paramBindings: parent.paramBindings
-            }))
-    return parents;
 }
 
 
@@ -173,6 +196,8 @@ function generateParameterLabel(parameterIndex, options) {
 
 // `;
 
+// const inputStr = `
+
 // PREFIX  bio2rdf: <http://bio2rdf.org/>
 
 // SELECT  ?mesh
@@ -181,6 +206,10 @@ function generateParameterLabel(parameterIndex, options) {
 //               bio2rdf:obo_vocabulary:x-mesh_dui  ?mesh
 //     FILTER ( ! isLiteral(bio2rdf:umls:C1314417) )
 //   }
+
 // `;
 
-// console.log(generalizeQuery(inputStr, {sparqlParameters: true}));
+// console.log(generalizeQuery(inputStr, {
+//     sparqlParameters: true,
+//     generalizationTree: true
+// }));

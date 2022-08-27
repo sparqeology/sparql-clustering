@@ -41,6 +41,9 @@ function lookup(sets, newSet, start, end) {
 }
 
 function insertInOrder(sets, newSet) {
+    if (newSet.length === 0) {
+        return sets;
+    }
     const index = lookup(sets, newSet);
     return [
         ...sets.slice(0, index),
@@ -53,22 +56,27 @@ function order(unorderedSets) {
     return unorderedSets.reduce(insertInOrder, []);
 }
 
+function minus(setA, setB) {
+    return setA.filter(item => !setB.includes(item))
+}
+
 function reduce(family) {
     return [
-        ...family.unassignedClusters.map((cluster, index) => ({
-            unassignedClusters: [
-                ...family.unassignedClusters.slice(0, index),
-                ...family.unassignedClusters.slice(index + 1)
-            ],
-            subsets: insertInOrder(family.subsets, cluster)
-        })),
+        ...family.unassignedClusters.flatMap((cluster, index) => 
+            getSubsets(cluster, 1).map(clusterSubset => ({
+                unassignedClusters: insertInOrder([
+                    ...family.unassignedClusters.slice(0, index),
+                    ...family.unassignedClusters.slice(index + 1)
+                ], minus(cluster, clusterSubset)),
+                subsets: insertInOrder(family.subsets, clusterSubset)
+            }))),
         ...family.subsets.flatMap((set, setIndex) => {
             const [setHead, ...setTail] = set;
             return getSubsets(setTail, 1).map(subset => ({
                     unassignedClusters: family.unassignedClusters,
                     subsets: [
                         ...family.subsets.slice(0, setIndex),
-                        set.filter(item => !subset.includes(item)),
+                        minus(set,subset),
                         ...insertInOrder(family.subsets.slice(setIndex + 1), subset)
                     ]
             }));
@@ -89,52 +97,51 @@ function reduceTree(family, tree = {}, options = {}) {
     return tree;
 }
 
-export default function getNonOverlappingFamilies(unorderedClusters, options = {}) {
+export default function getNonOverlappingFamilies(clusters, options = {}) {
     const emptyFamily = {
-        unassignedClusters: order(unorderedClusters),
+        unassignedClusters: clusters,
         subsets: []
     };
-    console.log('emptyFamily');
-    console.log(emptyFamily);
     var reduceTreeEntries = Object.entries(reduceTree(emptyFamily, {}, options));
     if (options.excludeEmptyFamily) {
         reduceTreeEntries = reduceTreeEntries.filter(([id, ...family]) => id !== emptyFamily);
     }
-    const numItems = unorderedClusters.flat().length;
+    const numItems = clusters.flat().length;
     return Object.fromEntries(
             reduceTreeEntries.map(([id, {reductions, subsets}]) => [id, {
                 reductions,
+                subsets,
                 vector: [...Array(numItems).keys()].map(item => subsets.findIndex(subset => subset.includes(item)))
             }]));
 }
 
-function test() {
-    // console.log(subsets([10,20,30], 2, 2));
-    // const result = reduce( {
-    //     unassignedClusters: [
-    //         [1, 5, 6],
-    //         [2],
-    //         [3, 7],
-    //         [4],
-    //         [8]
-    //     ],
-    //     subsets: []
-    // });
-    // console.log(JSON.stringify(result, null, 4));
-    // const result2 = result.map(reduce);
-    // console.log('result2');
-    // console.log(JSON.stringify(result2, null, 4));
+// function test() {
+//     // console.log(subsets([10,20,30], 2, 2));
+//     // const result = reduce( {
+//     //     unassignedClusters: [
+//     //         [1, 5, 6],
+//     //         [2],
+//     //         [3, 7],
+//     //         [4],
+//     //         [8]
+//     //     ],
+//     //     subsets: []
+//     // });
+//     // console.log(JSON.stringify(result, null, 4));
+//     // const result2 = result.map(reduce);
+//     // console.log('result2');
+//     // console.log(JSON.stringify(result2, null, 4));
 
-    const reductionTree = getNonOverlappingFamilies([
-            [0],
-            [1, 3],
-            [2]
-    ], {
-        // maxSubsets: 2
-    });
+//     const reductionTree = getNonOverlappingFamilies([
+//             [0],
+//             [1, 3],
+//             [2]
+//     ], {
+//         // maxSubsets: 2
+//     });
 
-    console.log(reductionTree);
+//     console.log(reductionTree);
 
-}
+// }
 
-test();
+// test();

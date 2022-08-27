@@ -37,7 +37,7 @@ aggregatePromise.then(result => {
   // fs.writeFileSync('./output/queryTreeExtended2.json', JSON.stringify(result, null, 2), 'utf8');
   // fs.writeFileSync('./output/queryTree_10_50.json', JSON.stringify(result, null, 2), 'utf8');
   // fs.writeFileSync('./output/queryRoots_10_50.json', JSON.stringify(result, null, 2), 'utf8');
-  fs.writeFileSync('./output/queryRootsAsArray.json', JSON.stringify(result, null, 2), 'utf8');
+  fs.writeFileSync('./output/queryRootsAsArray_2.0.json', JSON.stringify(result, null, 2), 'utf8');
   // fs.writeFileSync('./output/queryTreeExtended_10_50.json', JSON.stringify(result, null, 2), 'utf8');
 }, err => {
   console.error(err);
