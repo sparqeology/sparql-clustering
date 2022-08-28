@@ -46,9 +46,9 @@ function queryDictionariesAsArrays(queryDictionary) {
 
 export default async function generalizeAndAggregate(queryStream, options = {}) {
     const paramQueryMap = {};
+    console.time('create generalization dictionary');
     for await (const query of queryStream) {
         const paramQueries = generalizeQuery(query.text, options);
-        // console.log(paramQueries);
         if (!options.includeSimpleQueries) {
             paramQueries.shift(); // skip first item, which is the query itself
         }
@@ -73,6 +73,7 @@ export default async function generalizeAndAggregate(queryStream, options = {}) 
           });
         });
     }
+    console.timeEnd('create generalization dictionary');
     var outputParamQueryMap = Object.fromEntries(
         Object.entries(paramQueryMap)
                 .filter(([k,v]) => {

@@ -33,7 +33,9 @@ const aggregatePromise = generalizeAndAggregate(parser, {
   
 queriesInputStream.pipe(parser);
 
+console.time('main');
 aggregatePromise.then(result => {
+  console.timeEnd('main');
   // fs.writeFileSync('./output/queryTreeExtended2.json', JSON.stringify(result, null, 2), 'utf8');
   // fs.writeFileSync('./output/queryTree_10_50.json', JSON.stringify(result, null, 2), 'utf8');
   // fs.writeFileSync('./output/queryRoots_10_50.json', JSON.stringify(result, null, 2), 'utf8');

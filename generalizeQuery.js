@@ -161,7 +161,7 @@ function decomposeQuery(queryStr, options = {}) {
 
     const reduceTree = getNonOverlappingFamilies(
             constantsUnique.map(constant => constantPositions[constant]),
-            {maxSubsets: options.maxVars});
+            {maxSubsets: options.maxVars, memoized: true});
 
     if (options.generalizationTree) {
         const generalizationTree = Object.fromEntries(Object.entries(reduceTree).map(([familyId, {vector, subsets, reductions}]) => ([

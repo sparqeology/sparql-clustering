@@ -97,7 +97,15 @@ function reduceTree(family, tree = {}, options = {}) {
     return tree;
 }
 
+const cache = {};
+
 export default function getNonOverlappingFamilies(clusters, options = {}) {
+    const argStr = options.memoized ? JSON.stringify({clusters, options}) : undefined;
+    if (options.memoized) {
+        if (argStr in cache) {
+            return cache[argStr];
+        }
+    }
     const emptyFamily = {
         unassignedClusters: clusters,
         subsets: []
@@ -107,12 +115,16 @@ export default function getNonOverlappingFamilies(clusters, options = {}) {
         reduceTreeEntries = reduceTreeEntries.filter(([id, ...family]) => id !== emptyFamily);
     }
     const numItems = clusters.flat().length;
-    return Object.fromEntries(
+    const getNonOverlappingFamilies = Object.fromEntries(
             reduceTreeEntries.map(([id, {reductions, subsets}]) => [id, {
                 reductions,
                 subsets,
                 vector: [...Array(numItems).keys()].map(item => subsets.findIndex(subset => subset.includes(item)))
             }]));
+    if (options.memoized) {
+        cache[argStr] = getNonOverlappingFamilies;
+    }
+    return getNonOverlappingFamilies;
 }
 
 // function test() {
