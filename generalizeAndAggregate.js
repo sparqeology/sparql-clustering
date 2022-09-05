@@ -44,8 +44,50 @@ function queryDictionariesAsArrays(queryDictionary) {
     })
 }
 
+// const level = require('level')
+// const db = level('./db', { valueEncoding: 'json' })
+
+class MyMap {
+    constructor() {
+        this.data = {}
+    }
+
+    has(key) {
+        return (key in this.data);
+    }
+    get(key) {
+        return this.data[key];
+    }
+    async set(key, value) {
+        this.data[key] = value;
+    }
+    entries() {
+        return Object.entries(this.data);
+    }
+}
+
+// class MyMap {
+//     constructor() {
+//         this.data = {}
+//     }
+
+//     has(key) {
+//         return (key in this.data);
+//     }
+//     get(key) {
+//         return this.data[key];
+//     }
+//     set(key, value) {
+//         this.data[key] = value;
+//     }
+//     entries() {
+//         return Object.entries(this.data);
+//     }
+// }
+
 export default async function generalizeAndAggregate(queryStream, options = {}) {
-    const paramQueryMap = {};
+    // const paramQueryMap = {};
+    const paramQueryMap = new MyMap();
     console.time('create generalization dictionary');
     for await (const query of queryStream) {
         const paramQueries = generalizeQuery(query.text, options);
@@ -53,29 +95,73 @@ export default async function generalizeAndAggregate(queryStream, options = {}) 
             paramQueries.shift(); // skip first item, which is the query itself
         }
         paramQueries.forEach(paramQuery => {
-          if (! (paramQuery.query in paramQueryMap)) {
-            paramQueryMap[paramQuery.query] =
-                    options.generalizationTree ?
-                        {
-                            instances: [],
-                            generalizations: paramQuery.moreGeneralQueries 
-                        } :
-                        {
-                            instances: []
-                        };
-          }
-          paramQueryMap[paramQuery.query].instances.push({
-            originalQueryId: query.id,
-            // originalQuery: query.text,
-            bindings: paramQuery.paramBindings,
-            numOfExecutions: query.numOfExecutions,
-            numOfHosts: query.numOfHosts
-          });
+            // const paramQueryData = paramQueryMap.has(paramQuery.query) ?
+            //         paramQueryMap.get(paramQuery.query) :
+            //         (options.generalizationTree ?
+            //             {
+            //                 instances: [],
+            //                 generalizations: paramQuery.moreGeneralQueries 
+            //             } :
+            //             {
+            //                 instances: []
+            //             });
+            var paramQueryData;
+            if (paramQueryMap.has(paramQuery.query)) {
+                paramQueryData = paramQueryMap.get(paramQuery.query);
+            } else {
+                paramQueryData = options.generalizationTree ?
+                    {
+                        instances: [],
+                        generalizations: paramQuery.moreGeneralQueries 
+                    } :
+                    {
+                        instances: []
+                    };
+                paramQueryMap.set(paramQuery.query, paramQueryData);
+            }
+            // var paramQueryData = paramQueryMap.get(paramQuery.query);
+            // if (paramQueryData === undefined) {
+            //     paramQueryData = options.generalizationTree ?
+            //         {
+            //             instances: [],
+            //             generalizations: paramQuery.moreGeneralQueries 
+            //         } :
+            //         {
+            //             instances: []
+            //         };
+            // }
+            paramQueryData.instances.push({
+                originalQueryId: query.id,
+                // originalQuery: query.text,
+                bindings: paramQuery.paramBindings,
+                numOfExecutions: query.numOfExecutions,
+                numOfHosts: query.numOfHosts
+            });
+        //   if (! (paramQuery.query in paramQueryMap)) {
+        //     paramQueryMap[paramQuery.query] =
+        //             options.generalizationTree ?
+        //                 {
+        //                     instances: [],
+        //                     generalizations: paramQuery.moreGeneralQueries 
+        //                 } :
+        //                 {
+        //                     instances: []
+        //                 };
+        //   }
+        //   paramQueryMap[paramQuery.query].instances.push({
+        //     originalQueryId: query.id,
+        //     // originalQuery: query.text,
+        //     bindings: paramQuery.paramBindings,
+        //     numOfExecutions: query.numOfExecutions,
+        //     numOfHosts: query.numOfHosts
+        //   });
         });
     }
     console.timeEnd('create generalization dictionary');
+    console.time('filtering dictionary');
     var outputParamQueryMap = Object.fromEntries(
-        Object.entries(paramQueryMap)
+        // Object.entries(paramQueryMap)
+        [...paramQueryMap.entries()]
                 .filter(([k,v]) => {
                     const bindingsArray = v.instances.map(query => query.bindings);
                     const numOfBindings = bindingsArray.length;
@@ -134,7 +220,9 @@ export default async function generalizeAndAggregate(queryStream, options = {}) 
     //                 .filter(([k,v]) => (v.instances.reduce((sum, instance) => sum + instance.numOfHosts, 0) >= options.minNumOfHosts))
     //     );    
     // }
+    console.timeEnd('filtering dictionary');
     if (options.countInstances) {
+        console.time('aggregating single instances');
         outputParamQueryMap = Object.fromEntries(
             Object.entries(outputParamQueryMap)
                     .map(([query,queryDataWithInstances]) => {
@@ -147,8 +235,10 @@ export default async function generalizeAndAggregate(queryStream, options = {}) 
                         }]);
                     })
         );
+        console.timeEnd('aggregating single instances');
     }
     if (options.generalizationTree) {
+        console.time('building generalization forest');
         outputParamQueryMap = buildGeneralizationForest(outputParamQueryMap);
         if (options.onlyRoots) {
             outputParamQueryMap = Object.fromEntries(
@@ -159,9 +249,12 @@ export default async function generalizeAndAggregate(queryStream, options = {}) 
                         })
             );
         }
+        console.timeEnd('building generalization forest');
     }
     if (options.asArray) {
+        console.time('converting to array');
         outputParamQueryMap = queryDictionariesAsArrays(outputParamQueryMap);
+        console.timeEnd('converting to array');
     }
     return outputParamQueryMap;
 }

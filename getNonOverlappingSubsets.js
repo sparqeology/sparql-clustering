@@ -97,14 +97,23 @@ function reduceTree(family, tree = {}, options = {}) {
     return tree;
 }
 
-const cache = {};
+// const cache = {};
+const cache = new Map();
 
 export default function getNonOverlappingFamilies(clusters, options = {}) {
     const argStr = options.memoized ? JSON.stringify({clusters, options}) : undefined;
-    if (options.memoized) {
-        if (argStr in cache) {
-            return cache[argStr];
-        }
+    // if (options.memoized) {
+    //     const existingResult = cache.get(argStr);
+    //     if (existingResult !== undefined) return existingResult;
+    //     // if (argStr in cache) {
+    //     //     return cache[argStr];
+    //     // }
+    // }
+    if (options.memoized && cache.has(argStr)) {
+        return cache.get(argStr);
+        // if (argStr in cache) {
+        //     return cache[argStr];
+        // }
     }
     const emptyFamily = {
         unassignedClusters: clusters,
@@ -122,7 +131,8 @@ export default function getNonOverlappingFamilies(clusters, options = {}) {
                 vector: [...Array(numItems).keys()].map(item => subsets.findIndex(subset => subset.includes(item)))
             }]));
     if (options.memoized) {
-        cache[argStr] = getNonOverlappingFamilies;
+        // cache[argStr] = getNonOverlappingFamilies;
+        cache.set(argStr, getNonOverlappingFamilies);
     }
     return getNonOverlappingFamilies;
 }

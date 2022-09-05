@@ -17,7 +17,8 @@ const parser = parse({
 });
 
 const aggregatePromise = generalizeAndAggregate(parser, {
-    maxVars: 3, excludePreamble: true,
+    // maxVars: 3,
+    excludePreamble: true,
   generalizationTree: true,
   onlyRoots: true,
   asArray: true,
@@ -25,7 +26,7 @@ const aggregatePromise = generalizeAndAggregate(parser, {
   // minNumOfHosts: 10,
   sparqlParameters: true,
   includeSimpleQueries: true,
-  countInstances: true,
+  // countInstances: true,
   minBindingDivergenceRatio: 0.05,
   asArray: true
   // showBindingDistributions: true
@@ -38,8 +39,10 @@ aggregatePromise.then(result => {
   console.timeEnd('main');
   // fs.writeFileSync('./output/queryTreeExtended2.json', JSON.stringify(result, null, 2), 'utf8');
   // fs.writeFileSync('./output/queryTree_10_50.json', JSON.stringify(result, null, 2), 'utf8');
+  // fs.writeFileSync('./output/queryRootsExtended_minExecs_50.json', JSON.stringify(result, null, 2), 'utf8');
+  fs.writeFileSync('./output/queryRootsExtended.json', JSON.stringify(result, null, 2), 'utf8');
   // fs.writeFileSync('./output/queryRoots_10_50.json', JSON.stringify(result, null, 2), 'utf8');
-  fs.writeFileSync('./output/queryRootsAsArray_2.0.json', JSON.stringify(result, null, 2), 'utf8');
+  // fs.writeFileSync('./output/queryRootsAsArray.json', JSON.stringify(result, null, 2), 'utf8');
   // fs.writeFileSync('./output/queryTreeExtended_10_50.json', JSON.stringify(result, null, 2), 'utf8');
 }, err => {
   console.error(err);
