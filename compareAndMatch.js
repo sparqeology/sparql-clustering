@@ -2,6 +2,7 @@ import fs from 'fs';
 
 import { parse } from 'csv-parse';
 import generalizeAndAggregate from './generalizeAndAggregate.js';
+import aggregateAndSpecialize from './aggregateAndSpecialize.js';
 
 const queriesInputStream = fs.createReadStream('./output/queriesFromEP.csv');
 // const queriesInputStream = fs.createReadStream('./output/query1.csv');
@@ -16,11 +17,11 @@ const parser = parse({
     }
 });
 
-const aggregatePromise = generalizeAndAggregate(parser, {
+const aggregatePromise = aggregateAndSpecialize(parser, {
     // maxVars: 3,
     excludePreamble: true,
   generalizationTree: true,
-  onlyRoots: true,
+  // onlyRoots: true,
   asArray: true,
   // minNumOfExecutions: 50,
   // minNumOfHosts: 10,
@@ -40,7 +41,7 @@ aggregatePromise.then(result => {
   // fs.writeFileSync('./output/queryTreeExtended2.json', JSON.stringify(result, null, 2), 'utf8');
   // fs.writeFileSync('./output/queryTree_10_50.json', JSON.stringify(result, null, 2), 'utf8');
   // fs.writeFileSync('./output/queryRootsExtended_minExecs_50.json', JSON.stringify(result, null, 2), 'utf8');
-  fs.writeFileSync('./output/queryRootsExtended.json', JSON.stringify(result, null, 2), 'utf8');
+  fs.writeFileSync('./output/queryForestExtendedTest.json', JSON.stringify(result, null, 2), 'utf8');
   // fs.writeFileSync('./output/queryRoots_10_50.json', JSON.stringify(result, null, 2), 'utf8');
   // fs.writeFileSync('./output/queryRootsAsArray.json', JSON.stringify(result, null, 2), 'utf8');
   // fs.writeFileSync('./output/queryTreeExtended_10_50.json', JSON.stringify(result, null, 2), 'utf8');

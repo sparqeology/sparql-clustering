@@ -92,16 +92,11 @@ export function uniqueQueries(queries) {
 }
 
 export function fixParameter({queryPieces, parameterByPosition}, parameterToFix, value) {
-    // const newQueryPieces = [queryPieces[0]];
-    // const newParameterByPosition
     const newQuery = {queryPieces: [queryPieces[0]], parameterByPosition: []};
-    // var positionsToSkip = 0;
-    // const positionsFixed = [];
     parameterByPosition.forEach((parameter, position) => {
         const queryPiece = queryPieces[position + 1];
         if (parameter === parameterToFix) {
             newQuery.queryPieces[newQuery.queryPieces.length - 1] += value + queryPiece;
-            // positionsToSkip++;
         } else {
             newQuery.queryPieces.push(queryPiece);
             newQuery.parameterByPosition.push(parameter > parameterToFix ? parameter - 1 : parameter);
@@ -123,37 +118,27 @@ export function pairParameters({queryPieces, parameterByPosition}, parameter1, p
 }
 
 export function simplifyQueryBasic({queryPieces, parameterByPosition, instances}, fromParameter = 0) {
-    // console.log('Simplifying' + toString({queryPieces, parameterByPosition}) + 'with instances' + JSON.stringify(instances) + '...');
     const firstInstancebindings = instances[0].bindings;
+    // console.log(fromParameter);
     if (fromParameter >= firstInstancebindings.length) {
         return {queryPieces, parameterByPosition, instances};
     }
     const firstValue = firstInstancebindings[fromParameter];
-    let pairedParameter;
-    while ((pairedParameter = firstInstancebindings.indexOf(firstValue, fromParameter + 1)) !== -1) {
+    let pairedParameter = fromParameter;
+    while ((pairedParameter = firstInstancebindings.indexOf(firstValue, pairedParameter + 1)) !== -1) {
+        // console.log('checking if parameter ' + pairedParameter + ' is paired...');
         if (instances.every(({bindings}) => bindings[pairedParameter] === bindings[fromParameter])) {
+            // console.log('yes it is!');
             return simplifyQueryBasic(
                 selectByPairedParameters({queryPieces, parameterByPosition, instances}, fromParameter, pairedParameter, true),
-                // {
-                //     ...pairParameters({queryPieces, parameterByPosition}, fromParameter, pairedParameter),
-                //     instances: instances.map(({bindings, ...instanceData}) => ({
-                //         bindings: [...bindings.slice(0, pairedParameter), ...bindings.slice(pairedParameter + 1)],
-                //         ...instanceData
-                //     }))
-                // },
                 fromParameter);
         }
     }
+    // console.log('checking if value ' + firstValue + ' is fixed...');
     if (instances.every(({bindings}) => bindings[fromParameter] === firstValue)) {
+        // console.log('yes it is!');
         return simplifyQueryBasic(
             selectByParameterValue({queryPieces, parameterByPosition, instances}, fromParameter, firstValue, true),
-            // {
-            //     ...fixParameter({queryPieces, parameterByPosition}, fromParameter, firstValue),
-            //     instances: instances.map(({bindings, ...instanceData}) => ({
-            //         bindings: [...bindings.slice(0, fromParameter), ...bindings.slice(fromParameter + 1)],
-            //         ...instanceData
-            //     }))
-            // },
             fromParameter);
     }
     return simplifyQueryBasic({queryPieces, parameterByPosition, instances}, fromParameter + 1);
@@ -187,41 +172,25 @@ function totNumOfExecutions(instances) {
     return instances.reduce((totNumOfExecutions, {numOfExecutions}) => totNumOfExecutions + numOfExecutions);
 }
 
-var callCount = 0;
-
 export function generateSpecializations(inputQuery, fromParameter, options = {}) {
     if (fromParameter >= inputQuery.instances[0].bindings.length) {
         return [];
     }
-    // let {queryPieces, parameterByPosition, instances} =
-    //         simplifyQueryBasic(inputQuery, fromParameter, options);
 
     const {queryPieces, parameterByPosition, instances} = inputQuery;
 
     const minNumOfInstances = options.minNumOfInstancesInSubclass || options.minNumOfInstances || 1;
     const minNumOfExecutions = options.minNumOfExecutionsInSubclass || options.minNumOfExecutions || 1;
 
-    // const bindingDistrByInstances = Object.create(null);
-    // const bindingDistrByExecutions = Object.create(null);
     const instancesByValue = Object.create(null);
     const instancesByRepeatedParam = Object.create(null);
 
-    // const bindingDistr = Object.create(null);
-    // instances.forEach(({bindings, numOfExecutions}) => {
     instances.forEach(instance => {
             const value = instance.bindings[fromParameter];
         if (!(value in instancesByValue)) {
             instancesByValue[value] = [instance];
-            // bindingDistr[value] = {numOfInstances: 1, numOfExecutions};
-            // bindingDistrByInstances[value] = 1;
-            // bindingDistrByExecutions[value] = numOfExecutions;
         } else {
             instancesByValue[value].push(instance);
-            // const prevBindingDistr = bindingDistr[value];
-            // bindingDistr[value] = {
-            //     numOfInstances: prevBindingDistr.numOfInstances + 1,
-            //     numOfExecutions: prevBindingDistr.numOfExecutions + numOfExecutions
-            // }
         }
         instance.bindings.forEach((otherValue, parameter) => {
             if (parameter > fromParameter && otherValue === value) {
@@ -268,43 +237,11 @@ export function generateSpecializations(inputQuery, fromParameter, options = {})
 
     const furtherSpecializations = generateSpecializations(inputQuery, fromParameter + 1, options);
             
-    const callNum = callCount++;
-    // console.log(`Call n. ${callNum}.
-    // fromParameter: ${fromParameter}
-    // numOfInstances: ${instances.length}
-    // The following specializations have been generated:
-    // Fixed Value (call n. ${callNum}): ${fixedValueSpecializations.map(toString)}
-    // Repeated Value (call n. ${callNum}): ${repeatedValueSpecializations.map(toString)}
-    // Further (call n. ${callNum}): ${furtherSpecializations.map(toString)}
-    // Total (call n. ${callNum}): ${uniqueQueries([
-    //     ...fixedValueSpecializations,
-    //     ...repeatedValueSpecializations,
-    //     ...furtherSpecializations
-    // ]).map(toString)}`);
-
-    // const directSpecializations = queriesExcept([
-    //     ...fixedValueSpecializations,
-    //     ...repeatedValueSpecializations,
-    //     ...furtherSpecializations
-    // ], allSpecializations);
-
-    // return {
-    //     directSpecializations,
-    //     allSpecializations: [ ...allSpecializations, ...directSpecializations]
-    // };
     return uniqueQueries([
         ...fixedValueSpecializations,
         ...repeatedValueSpecializations,
         ...furtherSpecializations
     ]);
-    // return {
-    //     queryPieces, parameterByPosition, instances,
-    //     specializations: uniqueQueries([
-    //         ...fixedValueSpecializations,
-    //         ...repeatedValueSpecializations,
-    //         ...furtherSpecializations
-    //     ])
-    // }
     
 }
 
@@ -323,96 +260,117 @@ export function simplifyAndGenerateSpecializations(inputQuery, fromParameter, op
 }
 
 function pruneRedundantQueries({specializations, ...queryData}) {
-    const indirectSpecializations = [];
+    var indirectSpecializations = [];
     const directSpecializations = [];
-    // console.log(rootQuery);
-    specializations.forEach(specialization => {
+    const querySet = new QuerySet();
+    for (const specialization of specializations) {
         const {allSpecializations, ...prunedQuery} = pruneRedundantQueries(specialization);
-        indirectSpecializations.concat(allSpecializations);
+        indirectSpecializations = indirectSpecializations.concat(querySet.addIfNotExisting(allSpecializations));
         directSpecializations.push(prunedQuery);
-    });
-    const querySet = new QuerySet(indirectSpecializations);
+    }
     const filteredDirectSpecialization = querySet.addIfNotExisting(directSpecializations);
     return {
         ...queryData,
         specializations: filteredDirectSpecialization,
-        // directSpecializations: filteredDirectSpecialization,
-        allSpecializations: querySet.values()
+        allSpecializations: [...querySet.values()]
     }
 
 }
 
-// export function simplifyQuery({queryPieces, parameterByPosition, instances}, fromParameter, maxEqualBindings) {
-//     const bindingDistr = Object.create(null);
-//     instances.forEach(({bindings}) => {
-//         const value = bindings[fromParameter];
-//         if (!(value in bindingDistr)) {
-//             bindingDistr[value] = 1;
-//         } else {
-//             bindingDistr[value] += 1;
-//         }
-//     });
-//     for (value in bindingDistr) {
-//         if (value > maxEqualBindings) {
-//             return [
-//                 ...simplifyQuery({
-//                     ...fixParameter({queryPieces, parameterByPosition}, fromParameter, value),
-//                     instances:
-//                             instances
-//                             .filter(({bindings}) => bindings[fromParameter] === value)
-//                             .map(({bindings, ...instanceData}) => ({
-//                                 bindings: [...bindings.slice(0, fromParameter), ...bindings.slice(fromParameter + 1)],
-//                                 ...instanceData
-//                             }))
-//                 }, fromParameter + 1, maxEqualBindings),
-//                 ...simplifyQuery({
-//                     queryPieces, parameterByPosition,
-//                     instances: instances.filter(({bindings}) => bindings[fromParameter] !== value)
-//                 }, fromParameter + 1, maxEqualBindings)
-//             ];
-//         }
-//     }
+export function buildSpecializationTree(queryClass, options = {}) {
+    const {allSpecializations, ...specializationTree} = 
+        pruneRedundantQueries(simplifyAndGenerateSpecializations(queryClass, 0, options));
+    return specializationTree;
+}
+
+
+// const inputStr = `
+// PREFIX foaf: <http://xmlns.com/foaf/0.1/> 
+
+// SELECT * {
+//     ?mickey foaf:name "Mickey Mouse"@en
+// #        foaf:knows ?other.
 // }
 
 
-const inputStr = `
-PREFIX foaf: <http://xmlns.com/foaf/0.1/> 
+// `;
 
-SELECT * {
-    ?mickey foaf:name "Mickey Mouse"@en
-#        foaf:knows ?other.
-}
+// const {generalizedQuery, constants} = createGeneralizedQuery(inputStr, {sparqlParameters: true});
+
+// // console.log(generalizedQuery);
 
 
-`;
+// // console.log(toString(generalizedQuery));
 
-const {generalizedQuery, constants} = createGeneralizedQuery(inputStr, {sparqlParameters: true});
+// const queryClass = {
+//     ...generalizedQuery,
+//     instances: [
+//         {bindings: constants, numOfExecutions: 3},
+//         {bindings: constants, numOfExecutions: 5},
+//         {bindings: [
+//             'foaf:name',
+//             '"Pippo"',
+//             // 'foaf:hates'
+//         ], numOfExecutions: 8},
+//         // {bindings: ['foaf:name', '"Donald Duck"', 'foaf:hates'], numOfExecutions: 4},
+//         {bindings: [
+//             'foaf:hates', '"Rodolfo"',
+//             // 'foaf:hates'
+//         ], numOfExecutions: 6},
+//         // {bindings: ['foaf:hates', '"Rambo"', 'foaf:hates'], numOfExecutions: 2},
+//     ]
+// }
 
-console.log(generalizedQuery);
+// const queryClass2 =    {
+//     "queryPieces": [
+//       "SELECT  ?s ?o\nWHERE\n  { GRAPH bio2rdf:bioportal_resource:bio2rdf.dataset.bioportal.R3.statistics\n      { ?s  ",
+//       "  ?o }\n  }\nOFFSET  ",
+//       "\nLIMIT   ",
+//       "\n"
+//     ],
+//     "parameterByPosition": [
+//       0,
+//       1,
+//       2
+//     ],
+//     "instances": [
+//       {
+//         "bindings": [
+//           "rdf:type",
+//           "5000",
+//           "5000"
+//         ],
+//         "id": "14d6836f1070e73ab44fea4fcef086f0f952658aeaf7313da011e4160db93d22",
+//         "numOfExecutions": 2,
+//         "numOfHosts": 1
+//       },
+//       {
+//         "bindings": [
+//           "rdfs:label",
+//           "10000",
+//           "10000"
+//         ],
+//         "id": "19dd3bdcef3066c9d30a06c6f713c1f4b7f51de5cad50be1a8be6ead8f3c2498",
+//         "numOfExecutions": 7,
+//         "numOfHosts": 1
+//       },
+//       {
+//         "bindings": [
+//           "rdf:type",
+//           "120000",
+//           "5000"
+//         ],
+//         "id": "06f2e8e1506f5aba60c8b4ab6d4dc1652cdba9c332049cdc9155cbf3dfa762f8",
+//         "numOfExecutions": 1,
+//         "numOfHosts": 1
+//       }
+//     ]
+//   };
+  
+//   // // console.log(JSON.stringify(simplifyAndGenerateSpecializations(queryClass, 0), null, 2));
 
 
-console.log(toString(generalizedQuery));
+// // console.log(JSON.stringify(buildSpecializationTree(queryClass), null, 2));
 
-const queryClass = {
-    ...generalizedQuery,
-    instances: [
-        {bindings: constants, numOfExecutions: 3},
-        {bindings: constants, numOfExecutions: 5},
-        {bindings: [
-            'foaf:name',
-            '"Pippo"',
-            // 'foaf:hates'
-        ], numOfExecutions: 8},
-        // {bindings: ['foaf:name', '"Donald Duck"', 'foaf:hates'], numOfExecutions: 4},
-        {bindings: [
-            'foaf:hates', '"Rodolfo"',
-            // 'foaf:hates'
-        ], numOfExecutions: 6},
-        // {bindings: ['foaf:hates', '"Rambo"', 'foaf:hates'], numOfExecutions: 2},
-    ]
-}
-
-console.log(JSON.stringify(simplifyAndGenerateSpecializations(queryClass, 0), null, 2));
-
-console.log(JSON.stringify(pruneRedundantQueries(simplifyAndGenerateSpecializations(queryClass, 0)), null, 2));
+// console.log(JSON.stringify(simplifyQueryBasic(queryClass2), null, 2));
 
