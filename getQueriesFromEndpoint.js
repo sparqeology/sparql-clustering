@@ -7,7 +7,7 @@ const endpointFetcher = new SparqlEndpointFetcher();
 import { stringify } from 'csv-stringify';
 
 
-const queriesOutputStream = fs.createWriteStream('./output/queriesFromEP.csv');
+const queriesOutputStream = fs.createWriteStream('./output/queries_dbpedia_3.5.1.csv');
 
 const stringifier = stringify({
     delimiter: ','
