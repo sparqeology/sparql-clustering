@@ -5,10 +5,27 @@ export default class ParametricQueriesStorage {
 
     constructor(options) {
         this.options = options;
+        const {resourcesNs} = this.options;
+        this.prefix = `
+        @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+        @prefix lsqv: <http://lsq.aksw.org/vocab#>.
+        @prefix prov: <http://www.w3.org/ns/prov#> .
+        @prefix prv: <http://purl.org/net/provenance/ns#>.
+        @prefix prvTypes: <http://purl.org/net/provenance/types#>.
+        @prefix wfprov: <http://purl.org/wf4ever/wfprov#>.
+
+        @prefix lsqQueries: <http://lsq.aksw.org/lsqQuery->.
+        @prefix templates: <${resourcesNs}templates/>.
+        @prefix executions: <${resourcesNs}executions/>.
+        @prefix queryGenerations: <${resourcesNs}queryGenerations/>.
+        @prefix params: <${resourcesNs}params/>.
+        @prefix bindings: <${resourcesNs}bindings/>.
+        `;
     }
     async storeForest(forest, parentQueryId) {
-        for (const {text, instances, specializations} of forest) {
-            const {graphStoreURI, graphname, queryNs, queryExecutionsNs} = this.options;
+        const {graphStoreURI, graphname} = this.options;
+        for (const query of forest) {
+            const {text, instances, specializations} = query;
 
             const queryId = ++this.queryCount;
 
@@ -26,30 +43,21 @@ export default class ParametricQueriesStorage {
             //         pasq:queryText "${text}".
             // `;
 
-            var queryTurtle = `
-                @prefix prov: <http://www.w3.org/ns/prov#> .
-                @prefix prv: <http://purl.org/net/provenance/ns#>.
-                @prefix prvTypes: <http://purl.org/net/provenance/types#>.
-                @prefix pasq: <http://pasq.org/pasq/>. 
-                @prefix templates: <${queryNs}>.
-                @prefix executions: <${queryExecutionsNs}>.
-
-                ` + (parentQueryId === undefined ?
-                    `queries:${queryId} a pasq:TopParametricQuery.` :
-                    `queries:${parentQueryId} pasq:specialization queries:${queryId}.`) `
-
+            var queryTurtle = this.prefix +
+                (parentQueryId === undefined ?
+                    `templates:${queryId} prov:wasGeneratedBy <>.` :
+                    `templates:${queryId} prov:specializationOf  templates:${parentQueryId}.`) + `
                 templates:${queryId}
                     a prvTypes:QueryTemplate, sh:Parametrizable;
-                    lsqv:text "${text}";
-                    sh:parameter "${instances[0].bindings.map(({}, index) => `param:${queryId}_${index}`).join(', ')}".
+                    lsqv:text "${text}".
             `;
 
             for (const paramIndex of instances[0].bindings.map(({}, paramIndex) => paramIndex)) {
                 const paramName = '';
                 queryTurtle += `
-                    templates:${queryId} sh:parameter param:${queryId}_${paramIndex}.
+                    templates:${queryId} sh:parameter params:${queryId}_${paramIndex}.
 
-                    param:${queryId}_${paramIndex}
+                    params:${queryId}_${paramIndex}
                         a sh:Parameter;
                         sh:path paramPath:${paramName};
                         sh:description "${paramName}".
@@ -64,18 +72,19 @@ export default class ParametricQueriesStorage {
                         a  prvTypes:DataCreation;
                         prv:usedGuideline templates:${queryId}s.
 
-                    queries:${lsqId}
+                    lsqQueries:${lsqId}
                         a prvTypes:SPARQLQuery;
-                        prv:createdBy queryGeneration:${lsqId}.
+                        prv:createdBy queryGenerations:${lsqId}.
                 `;
 
                 for (const [paramIndex, bindingValue] of bindings.entries()) {
                     queryTurtle += `
-                        queryGeneration:${queryId}_${lsqId} prv:usedData binding:${lsqId}_${paramIndex}.
-                        binding:${lsqId}_${paramIndex}
-                            a xxx:Binding;
-                            xxx:parameter param:${queryId}_${paramIndex};
-                            xxx:value ${bindingValue}.
+                        queryGenerations:${queryId}_${lsqId} prv:usedData bindings:${lsqId}_${paramIndex}.
+#                        wfprov:usedInput
+                        bindings:${lsqId}_${paramIndex}
+                            a wfprov:Artifact;
+                            wfprov:describedByParameter params:${queryId}_${paramIndex};
+                            rdf:value ${bindingValue}.
                     `;
                 }
                     // queryTurtle += `
@@ -101,6 +110,8 @@ export default class ParametricQueriesStorage {
                 throw new Error(message, { response });
             }
 
+            await storeForest(specializations, query);
+            
         }
     }
 }
