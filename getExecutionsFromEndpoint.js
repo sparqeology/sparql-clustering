@@ -7,7 +7,7 @@ const endpointFetcher = new SparqlEndpointFetcher();
 import { stringify } from 'csv-stringify';
 
 
-const queriesOutputStream = fs.createWriteStream('./output/executionsFromEP.csv');
+const queriesOutputStream = fs.createWriteStream('./output/executionsFromEP_20100430.csv');
 
 const stringifier = stringify({
     delimiter: ','
@@ -22,7 +22,7 @@ stringifier.on('readable', function(){
 
 const queryText = fs.readFileSync('./executions.rq');
 
-const bindingsStream = await endpointFetcher.fetchBindings('http://localhost:3030/lsq2', queryText);
+const bindingsStream = await endpointFetcher.fetchBindings('http://localhost:3030/lsqDev', queryText);
 bindingsStream
     .on('variables', (variables) => {
         const varnames = variables.map(v => v.value);

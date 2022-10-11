@@ -7,7 +7,7 @@ const endpointFetcher = new SparqlEndpointFetcher();
 import { stringify } from 'csv-stringify';
 
 
-const queriesOutputStream = fs.createWriteStream('./output/queries_dbpedia_3.5.1.csv');
+const queriesOutputStream = fs.createWriteStream('./output/queries_dbpedia_3.5.1_20100430.csv');
 
 const stringifier = stringify({
     delimiter: ','
@@ -44,7 +44,7 @@ function castRDFTerm(rdfTerm) {
     return null;
 }
 
-const bindingsStream = await endpointFetcher.fetchBindings('http://localhost:3030/lsq2', queryText);
+const bindingsStream = await endpointFetcher.fetchBindings('http://localhost:3030/lsqDev', queryText);
 bindingsStream
     .on('variables', (variables) => {
         const varnames = variables.map(v => v.value);
