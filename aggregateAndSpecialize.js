@@ -1,4 +1,4 @@
-import {buildSpecializationTree, createGeneralizedQuery, toString} from './queryHandling.js';
+import {buildSpecializationTree, createGeneralizedQuery, toString, mergePreambles} from './queryHandling.js';
 
 function aggregateInstances({instances, specializations, ...queryData}) {
     return {
@@ -9,9 +9,10 @@ function aggregateInstances({instances, specializations, ...queryData}) {
     }
 }
 
-function textualForm({queryPieces, parameterByPosition, specializations, ...queryData}) {
+function textualForm({queryPieces, parameterByPosition, preamble, specializations, ...queryData}) {
     return {
-        text: toString({queryPieces, parameterByPosition}),
+        text: preamble + toString({queryPieces, parameterByPosition}),
+        preamble,
         ...queryData,
         specializations: specializations.map(textualForm)
     }
@@ -32,18 +33,21 @@ export default async function aggregateAndSpecialize(queryStream, options = {}) 
         if (queryCounter % 1000 === 0) {
             process.stdout.write(('' + queryCounter / 1000).padStart(8, ' ') + ' K\r');
         }
-        const {generalizedQuery, constants} = createGeneralizedQuery(queryText, options);
+        const {generalizedQuery, constants, preamble} = createGeneralizedQuery(queryText, options);
         const queryStr = toString(generalizedQuery);
         const instance = {
             bindings: constants,
             ...queryData
         };
         if (paramQueryMap.has(queryStr)) {
-            paramQueryMap.get(queryStr).instances.push(instance);
+            const queryObj = paramQueryMap.get(queryStr);
+            queryObj.instances.push(instance);
+            queryObj.preamble = mergePreambles(queryObj.preamble, preamble);
         } else {
             paramQueryMap.set(queryStr, {
                 ...generalizedQuery,
-                instances: [instance]
+                instances: [instance],
+                preamble
             });
         }
         queryCounter++;

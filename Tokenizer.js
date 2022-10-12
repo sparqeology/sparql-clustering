@@ -46,6 +46,7 @@ export default class Tokenizer {
         baseLexer.setInput(queryStr);
         this.lexer = new LookaheadLexer(baseLexer);
         this.afterPreamble = false;
+        this.preamble = '';
     }
 
     next() {
@@ -61,6 +62,9 @@ export default class Tokenizer {
                     parameterizable: false
                 };
             } else {
+                if (this.options.excludePreamble) {
+                    this.preamble += this.lexer.match;
+                }
                 return {
                     match: this.options.excludePreamble ? '' : this.lexer.match,
                     parameterizable: false

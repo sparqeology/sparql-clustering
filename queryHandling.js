@@ -16,17 +16,19 @@ export function decomposeQuery(queryStr, options = {}) {
             queryPieces[queryPieces.length-1] += tokenizerResult.match;
         }
     }
-    return {queryPieces, constants};
+    const preamble = tokenizer.preamble;
+    return {queryPieces, constants, preamble};
 }
 
 export function createGeneralizedQuery(queryStr, options = {}) {
-    const {queryPieces, constants} = decomposeQuery(queryStr, options);
+    const {queryPieces, constants, preamble} = decomposeQuery(queryStr, options);
     return {
         generalizedQuery: {
             queryPieces,
             parameterByPosition: constants.map((constant, index) => index)
         },
-        constants
+        constants,
+        preamble
     };
 }
 
@@ -91,8 +93,8 @@ export function uniqueQueries(queries) {
     });
 }
 
-export function fixParameter({queryPieces, parameterByPosition}, parameterToFix, value) {
-    const newQuery = {queryPieces: [queryPieces[0]], parameterByPosition: []};
+export function fixParameter({queryPieces, parameterByPosition, preamble}, parameterToFix, value) {
+    const newQuery = {queryPieces: [queryPieces[0]], parameterByPosition: [], preamble};
     parameterByPosition.forEach((parameter, position) => {
         const queryPiece = queryPieces[position + 1];
         if (parameter === parameterToFix) {
@@ -105,8 +107,8 @@ export function fixParameter({queryPieces, parameterByPosition}, parameterToFix,
     return newQuery;
 }
 
-export function pairParameters({queryPieces, parameterByPosition}, parameter1, parameter2) {
-    const newQuery = {queryPieces, parameterByPosition: []};
+export function pairParameters({queryPieces, parameterByPosition, preamble}, parameter1, parameter2) {
+    const newQuery = {queryPieces, parameterByPosition: [], preamble};
     parameterByPosition.forEach(parameter => {
         if (parameter === parameter2) {
             newQuery.parameterByPosition.push(parameter1);
@@ -117,36 +119,37 @@ export function pairParameters({queryPieces, parameterByPosition}, parameter1, p
     return newQuery;
 }
 
-export function simplifyQueryBasic({queryPieces, parameterByPosition, instances}, fromParameter = 0) {
-    const firstInstancebindings = instances[0].bindings;
+export function simplifyQueryBasic(parametricQuery, fromParameter = 0) {
+    const firstInstancebindings = parametricQuery.instances[0].bindings;
     // console.log(fromParameter);
     if (fromParameter >= firstInstancebindings.length) {
-        return {queryPieces, parameterByPosition, instances};
+        return parametricQuery;
     }
     const firstValue = firstInstancebindings[fromParameter];
     let pairedParameter = fromParameter;
     while ((pairedParameter = firstInstancebindings.indexOf(firstValue, pairedParameter + 1)) !== -1) {
         // console.log('checking if parameter ' + pairedParameter + ' is paired...');
-        if (instances.every(({bindings}) => bindings[pairedParameter] === bindings[fromParameter])) {
+        if (parametricQuery.instances.every(({bindings}) => bindings[pairedParameter] === bindings[fromParameter])) {
             // console.log('yes it is!');
             return simplifyQueryBasic(
-                selectByPairedParameters({queryPieces, parameterByPosition, instances}, fromParameter, pairedParameter, true),
+                selectByPairedParameters(parametricQuery, fromParameter, pairedParameter, true),
                 fromParameter);
         }
     }
     // console.log('checking if value ' + firstValue + ' is fixed...');
-    if (instances.every(({bindings}) => bindings[fromParameter] === firstValue)) {
+    if (parametricQuery.instances.every(({bindings}) => bindings[fromParameter] === firstValue)) {
         // console.log('yes it is!');
         return simplifyQueryBasic(
-            selectByParameterValue({queryPieces, parameterByPosition, instances}, fromParameter, firstValue, true),
+            selectByParameterValue(parametricQuery, fromParameter, firstValue, true),
             fromParameter);
     }
-    return simplifyQueryBasic({queryPieces, parameterByPosition, instances}, fromParameter + 1);
+    return simplifyQueryBasic(parametricQuery, fromParameter + 1);
 }
 
-function selectByParameterValue({queryPieces, parameterByPosition, instances}, parameter, value, skipFilter = false) {
+function selectByParameterValue({queryPieces, parameterByPosition, preamble, instances}, parameter, value, skipFilter = false) {
     return {
         ...fixParameter({queryPieces, parameterByPosition}, parameter, value),
+        preamble,
         instances:
                 (skipFilter ? instances : instances.filter(({bindings}) => bindings[parameter] === value))
                 .map(({bindings, ...instanceData}) => ({
@@ -156,9 +159,10 @@ function selectByParameterValue({queryPieces, parameterByPosition, instances}, p
     }
 }
 
-function selectByPairedParameters({queryPieces, parameterByPosition, instances}, parameter1, parameter2, skipFilter = false) {
+function selectByPairedParameters({queryPieces, parameterByPosition, preamble, instances}, parameter1, parameter2, skipFilter = false) {
     return {
         ...pairParameters({queryPieces, parameterByPosition}, parameter1, parameter2),
+        preamble,
         instances:
                 (skipFilter ? instances : instances.filter(({bindings}) => bindings[parameter1] === bindings[parameter2]))
                 .map(({bindings, ...instanceData}) => ({
@@ -172,12 +176,10 @@ function totNumOfExecutions(instances) {
     return instances.reduce((totNumOfExecutions, {numOfExecutions}) => totNumOfExecutions + numOfExecutions);
 }
 
-export function generateSpecializations(inputQuery, fromParameter, options = {}) {
-    if (fromParameter >= inputQuery.instances[0].bindings.length) {
+export function generateSpecializations(parametricQuery, fromParameter, options = {}) {
+    if (fromParameter >= parametricQuery.instances[0].bindings.length) {
         return [];
     }
-
-    const {queryPieces, parameterByPosition, instances} = inputQuery;
 
     const minNumOfInstances = options.minNumOfInstancesInSubclass || options.minNumOfInstances || 1;
     const minNumOfExecutions = options.minNumOfExecutionsInSubclass || options.minNumOfExecutions || 1;
@@ -185,7 +187,7 @@ export function generateSpecializations(inputQuery, fromParameter, options = {})
     const instancesByValue = Object.create(null);
     const instancesByRepeatedParam = Object.create(null);
 
-    instances.forEach(instance => {
+    parametricQuery.instances.forEach(instance => {
             const value = instance.bindings[fromParameter];
         if (!(value in instancesByValue)) {
             instancesByValue[value] = [instance];
@@ -213,11 +215,7 @@ export function generateSpecializations(inputQuery, fromParameter, options = {})
                 ([value, instances]) => totNumOfExecutions(instances) >= minNumOfExecutions);
     }
     const fixedValueSpecializations = valuesAndInstancesForSpecializations.map(([value, instances]) =>
-            simplifyAndGenerateSpecializations(selectByParameterValue({
-                queryPieces,
-                parameterByPosition,
-                instances
-            }, fromParameter, value, true), fromParameter, options));
+            simplifyAndGenerateSpecializations(selectByParameterValue(parametricQuery, fromParameter, value, true), fromParameter, options));
 
     var paramAndInstancesForSpecializations = Object.entries(instancesByRepeatedParam);
     if (minNumOfInstances > 1) {
@@ -229,13 +227,9 @@ export function generateSpecializations(inputQuery, fromParameter, options = {})
                 ([value, instances]) => totNumOfExecutions(instances) >= minNumOfExecutions);
     }
     const repeatedValueSpecializations = paramAndInstancesForSpecializations.map(([pairedParameter, instances]) =>
-            simplifyAndGenerateSpecializations(selectByPairedParameters({
-                queryPieces,
-                parameterByPosition,
-                instances
-            }, fromParameter, pairedParameter, true), fromParameter + 1, options));   
+            simplifyAndGenerateSpecializations(selectByPairedParameters(parametricQuery, fromParameter, pairedParameter, true), fromParameter + 1, options));   
 
-    const furtherSpecializations = generateSpecializations(inputQuery, fromParameter + 1, options);
+    const furtherSpecializations = generateSpecializations(parametricQuery, fromParameter + 1, options);
             
     return uniqueQueries([
         ...fixedValueSpecializations,
@@ -245,9 +239,9 @@ export function generateSpecializations(inputQuery, fromParameter, options = {})
     
 }
 
-export function simplifyAndGenerateSpecializations(inputQuery, fromParameter, options = {}) {
-    const simplifiedQuery = simplifyQueryBasic(inputQuery);
-    if (fromParameter >= inputQuery.instances[0].bindings.length) {
+export function simplifyAndGenerateSpecializations(parametricQuery, fromParameter, options = {}) {
+    const simplifiedQuery = simplifyQueryBasic(parametricQuery);
+    if (fromParameter >= parametricQuery.instances[0].bindings.length) {
         return {
             ...simplifiedQuery,
             specializations: []
@@ -283,6 +277,14 @@ export function buildSpecializationTree(queryClass, options = {}) {
     return specializationTree;
 }
 
+function simplePreambleLines(preamble) {
+    return preamble.split('\n').map(s => s.trim().replaceAll('/\s+/', ' ')).filter(s => s.length > 0);
+}
+
+export function mergePreambles(preamble1, preamble2) {
+    const newPreamble = [...new Set([...simplePreambleLines(preamble1),...simplePreambleLines(preamble2)])].sort().join('\n');
+    return newPreamble + (newPreamble.length > 0 ? '\n' : '');
+}
 
 // const inputStr = `
 // PREFIX foaf: <http://xmlns.com/foaf/0.1/> 
