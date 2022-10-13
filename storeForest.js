@@ -6,6 +6,36 @@ import { rebaseTerm } from './turtleEncoding';
 
 const n3Writer = new Writer()
 
+function md5(str) {
+    return crypto.createHash('md5').update(str).digest("hex")
+}
+
+function escapeIriFragment(iriStr) {
+    const completeIri = n3Writer._encodeIriOrBlank(DataFactory.namedNode(iriStr))
+    return completeIri.substring(1, completeIri.length - 2)
+}
+
+function escapeLsqId(lsqId) {
+    return lsqId.replaceAll('-', '_')
+}
+
+function escapeLiteral(literalStr) {
+    return n3Writer._encodeLiteral(DataFactory.literal(literalStr))
+}
+
+async function httpCall(url, options) {
+    const response = await fetch(url, options);
+
+    if (!response.ok) {
+        const message = await response.text();
+        throw new Error(message, { response });
+    }
+}
+
+function buildGraphUrl(graphStoreUrl, graphname) {
+    return graphStoreUrl + '?' + (graphname ? 'graph=' + encodeURIComponent(graphname) : 'defaultGraph')
+}
+
 export default class ParametricQueriesStorage {
     queryCount = 0;
 
@@ -40,24 +70,7 @@ export default class ParametricQueriesStorage {
         @prefix datasets: <${resourcesNs}datasets/>.
         `;
 
-        this.outputUrl = outputGraphStoreURL + '?' + (outputGraphname ? 'graph=' + encodeURIComponent(outputGraphname) : 'defaultGraph')
-    }
-
-    static md5(str) {
-        return crypto.createHash('md5').update(str).digest("hex")
-    }
-
-    static escapeIriFragment(iriStr) {
-        const completeIri = n3Writer._encodeIriOrBlank(DataFactory.namedNode(iriStr))
-        return completeIri.substring(1, completeIri.length - 2)
-    }
-
-    static escapeLsqId(lsqId) {
-        return lsqId.replaceAll('-', '_')
-    }
-
-    static escapeLiteral(literalStr) {
-        return n3Writer._encodeLiteral(DataFactory.literal(literalStr))
+        this.outputUrl = buildGraphUrl(outputGraphStoreURL, outputGraphname);
     }
 
     async recordProcessStart() {
@@ -67,8 +80,6 @@ export default class ParametricQueriesStorage {
             metadataGraphStoreURL = outputGraphStoreURL, metadataGraphname = null,
             overwriteOutputGraph = true
         } = this.options
-        const metadataUrl = metadataGraphStoreURL /*(metadataGraphStoreURI ? metadataGraphStoreURI : graphStoreURI) */ + '?' +
-                (metadataGraphname ? 'graph=' + encodeURIComponent(metadataGraphname) : 'defaultGraph')
 
         const actionId = uuidv4()
         const inputGraphId = encodeURIComponent(inputGraphStoreURL) + (inputGraphname ? '_' + encodeURIComponent(inputGraphname) : '')
@@ -89,8 +100,15 @@ export default class ParametricQueriesStorage {
         datasets:${inputGraphStoreId} a sd:Dataset;
             ${inputGraphname ? 'sd:namedGraph' : 'sd:defaultGraph'} inputs:${inputGraphId}.`
 
+        const metadataUrl = buildGraphUrl(this.metadataGraphStoreURL, this.metadataGraphname);
+        await httpCall(metadataUrl, {
+            method: 'POST',
+            headers: {'Content-Type': 'text/turtle'},
+            body: initialMetadata
+        });
+
         if (overwriteOutputGraph) {
-            const responseDelete = await fetch(this.outputUrl, {
+            await httpCall(this.outputUrl, {
                 method: 'DELETE'
             });
         }
@@ -126,7 +144,7 @@ export default class ParametricQueriesStorage {
                     `templates:${queryId} prov:wasGeneratedBy actions:${actionId}.`) + `
                 templates:${queryId}
                     a prvTypes:QueryTemplate, sh:Parametrizable;
-                    lsqv:text ${ParametricQueriesStorage.escapeLiteral(text)}.
+                    lsqv:text ${escapeLiteral(text)}.
             `;
 
             for (const paramIndex of instances[0].bindings.map(({}, paramIndex) => paramIndex)) {
@@ -144,9 +162,9 @@ export default class ParametricQueriesStorage {
             //  templates:${queryId} sh:parameter ...
 
             for (const {id: lsqIdUnesc, bindings} of instances) {
-                // const lsqId = ParametricQueriesStorage.escapeIriFragment(lsqIdUnesc)
-                const lsqId = ParametricQueriesStorage.escapeLsqId(lsqIdUnesc)
-                // const queryGenerationIri = ParametricQueriesStorage.escapeIri(`queryGenerations:${queryId}_${lsqId}`)
+                // const lsqId = escapeIriFragment(lsqIdUnesc)
+                const lsqId = escapeLsqId(lsqIdUnesc)
+                // const queryGenerationIri = escapeIri(`queryGenerations:${queryId}_${lsqId}`)
                 queryTurtle += `
                     queryGenerations:${queryId}_${lsqId}
                         a  prvTypes:DataCreation;
@@ -205,8 +223,6 @@ export default class ParametricQueriesStorage {
             outputGraphStoreURL = inputGraphStoreURL, outputGraphname = null,
             metadataGraphStoreURL = outputGraphStoreURL, metadataGraphname = null
         } = this.options
-        const metadataUrl = metadataGraphStoreURL /*(metadataGraphStoreURI ? metadataGraphStoreURI : graphStoreURI) */ + '?' +
-                (metadataGraphname ? 'graph=' + encodeURIComponent(metadataGraphname) : 'defaultGraph')
     
         const outputGraphId = encodeURIComponent(outputGraphStoreURL) + (outputGraphname ? '_' + encodeURIComponent(outputGraphname) : '')
         const outputGraphStoreId = encodeURIComponent(outputGraphStoreURL)
@@ -229,6 +245,13 @@ export default class ParametricQueriesStorage {
             datasets:${outputGraphStoreId} a sd:Dataset;
                 ${outputGraphname ? 'sd:namedGraph' : 'sd:defaultGraph'} inputs:${outputGraphId}.
         };`
+
+        const metadataUrl = buildGraphUrl(this.metadataGraphStoreURL, this.metadataGraphname);
+        await httpCall(metadataUrl, {
+            method: 'PATCH',
+            headers: {'Content-Type': 'application/sparql-update'},
+            body: metadataUpdate
+        });
     }
     
 }
