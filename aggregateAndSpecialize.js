@@ -1,4 +1,5 @@
 import {buildSpecializationTree, createGeneralizedQuery, toString, mergePreambles} from './queryHandling.js';
+import {preambleToString} from './turtleEncoding.js'
 
 function aggregateInstances({instances, specializations, ...queryData}) {
     return {
@@ -11,7 +12,7 @@ function aggregateInstances({instances, specializations, ...queryData}) {
 
 function textualForm({queryPieces, parameterByPosition, preamble, specializations, ...queryData}) {
     return {
-        text: preamble + toString({queryPieces, parameterByPosition}),
+        text: preambleToString(preamble) + toString({queryPieces, parameterByPosition}),
         preamble,
         ...queryData,
         specializations: specializations.map(textualForm)

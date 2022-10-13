@@ -62,9 +62,9 @@ export default class Tokenizer {
                     parameterizable: false
                 };
             } else {
-                if (this.options.excludePreamble) {
+                // if (this.options.excludePreamble) {
                     this.preamble += this.lexer.match;
-                }
+                // }
                 return {
                     match: this.options.excludePreamble ? '' : this.lexer.match,
                     parameterizable: false

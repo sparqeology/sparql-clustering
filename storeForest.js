@@ -2,6 +2,7 @@ import fetch from 'node-fetch';
 import crypto from 'crypto';
 import {v4 as uuidv4} from 'uuid';
 import {Writer, DataFactory} from 'n3';
+import { rebaseTerm } from './turtleEncoding';
 
 const n3Writer = new Writer()
 
@@ -101,7 +102,7 @@ export default class ParametricQueriesStorage {
         const {outputGraphStoreURL, outputGraphname = null, overwriteOutputGraph = true} = this.options
 
         for (const query of forest) {
-            const {text, instances, specializations} = query;
+            const {text, instances, specializations, preamble} = query;
 
             const queryId = ++this.queryCount;
 
@@ -164,7 +165,7 @@ export default class ParametricQueriesStorage {
                         bindings:${lsqId}_${paramIndex}
                             a wfprov:Artifact;
                             wfprov:describedByParameter params:${queryId}_${paramIndex};
-                            rdf:value ${bindingValue}.
+                            rdf:value ${rebaseTerm(bindingValue, preamble)}.
                     `; // wfprov:usedInput
                 }
                     // queryTurtle += `

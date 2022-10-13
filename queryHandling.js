@@ -1,4 +1,5 @@
 import Tokenizer from "./Tokenizer.js";
+import { parsePreamble } from "./turtleEncoding.js";
 
 export function decomposeQuery(queryStr, options = {}) {
     const tokenizer = new Tokenizer(queryStr, options);
@@ -16,7 +17,7 @@ export function decomposeQuery(queryStr, options = {}) {
             queryPieces[queryPieces.length-1] += tokenizerResult.match;
         }
     }
-    const preamble = tokenizer.preamble;
+    const preamble = parsePreamble(tokenizer.preamble);
     return {queryPieces, constants, preamble};
 }
 
@@ -277,13 +278,8 @@ export function buildSpecializationTree(queryClass, options = {}) {
     return specializationTree;
 }
 
-function simplePreambleLines(preamble) {
-    return preamble.split('\n').map(s => s.trim().replaceAll('/\s+/', ' ')).filter(s => s.length > 0);
-}
-
 export function mergePreambles(preamble1, preamble2) {
-    const newPreamble = [...new Set([...simplePreambleLines(preamble1),...simplePreambleLines(preamble2)])].sort().join('\n');
-    return newPreamble + (newPreamble.length > 0 ? '\n' : '');
+    return {...preamble1, ...preamble2};
 }
 
 // const inputStr = `
