@@ -17,7 +17,14 @@ export function decomposeQuery(queryStr, options = {}) {
             queryPieces[queryPieces.length-1] += tokenizerResult.match;
         }
     }
-    const preamble = parsePreamble(tokenizer.preamble);
+    let preamble;
+    try {
+        preamble = parsePreamble(tokenizer.preamble);
+    } catch(exception) {
+        // Not a valid preamble, probably query is sintactically incorrect, it falls back to put the "preamble" back in the query.
+        preamble = {};
+        queryPieces[0] = tokenizer.preamble + queryPieces[0];
+    }
     return {queryPieces, constants, preamble};
 }
 
@@ -279,7 +286,13 @@ export function buildSpecializationTree(queryClass, options = {}) {
 }
 
 export function mergePreambles(preamble1, preamble2) {
-    return {...preamble1, ...preamble2};
+    if (!preamble1) {
+        return preamble2;
+    }
+    return {
+        baseIRI: 'baseIRI' in preamble1 ? preamble1.baseIRI : preamble2.baseIRI,
+        prefixes: 'prefixes' in preamble1 ? 'prefixes' in preamble2 ? {...preamble1.prefixes, ...preamble2.prefixes} : preamble1.prefixes : preamble2.prefixes
+    };
 }
 
 // const inputStr = `

@@ -1,26 +1,15 @@
 import fetch from 'node-fetch';
 import crypto from 'crypto';
 import {v4 as uuidv4} from 'uuid';
-import {Writer, DataFactory} from 'n3';
-import { rebaseTerm } from './turtleEncoding';
-
-const n3Writer = new Writer()
+import { rebaseTerm, escapeLiteral } from './turtleEncoding.js';
+import { mergePreambles } from './queryHandling.js';
 
 function md5(str) {
     return crypto.createHash('md5').update(str).digest("hex")
 }
 
-function escapeIriFragment(iriStr) {
-    const completeIri = n3Writer._encodeIriOrBlank(DataFactory.namedNode(iriStr))
-    return completeIri.substring(1, completeIri.length - 2)
-}
-
 function escapeLsqId(lsqId) {
     return lsqId.replaceAll('-', '_')
-}
-
-function escapeLiteral(literalStr) {
-    return n3Writer._encodeLiteral(DataFactory.literal(literalStr))
 }
 
 async function httpCall(url, options) {
@@ -61,8 +50,9 @@ export default class ParametricQueriesStorage {
         @prefix paramPaths: <${resourcesNs}paramPaths/>.
         `;
         this.metadataPreamble = `
-        @prefic schema: <https://schema.org/> .
-        @prefic xsd: <http://www.w3.org/2001/XMLSchema#> .
+        @prefix schema: <https://schema.org/> .
+        @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+        @prefix sd: <http://www.w3.org/ns/sparql-service-description#>.
         
         @prefix actions: <${resourcesNs}actions/>.
         @prefix graphs: <${resourcesNs}graphs/>.
@@ -74,10 +64,10 @@ export default class ParametricQueriesStorage {
     }
 
     async recordProcessStart() {
+        // console.log('Begin of recordProcessStart()');
         const {
             inputGraphStoreURL, inputGraphname = null,
-            outputGraphStoreURL = inputGraphStoreURL, outputGraphname = null,
-            metadataGraphStoreURL = outputGraphStoreURL, metadataGraphname = null,
+            metadataGraphStoreURL, metadataGraphname = null,
             overwriteOutputGraph = true
         } = this.options
 
@@ -87,7 +77,7 @@ export default class ParametricQueriesStorage {
 
         const initialMetadata = this.metadataPreamble + `
         actions:${actionId} a schema:Action;
-            schema:startTime '${new Date().toISOString()}'^xsd:dateTime
+            schema:startTime '${new Date().toISOString()}'^^xsd:dateTime;
             schema:actionStatus schema:ActiveActionStatus;
             schema:object graphs:${inputGraphId}.
         
@@ -98,9 +88,10 @@ export default class ParametricQueriesStorage {
             sd:defaultDataset datasets:${inputGraphStoreId}.
 
         datasets:${inputGraphStoreId} a sd:Dataset;
-            ${inputGraphname ? 'sd:namedGraph' : 'sd:defaultGraph'} inputs:${inputGraphId}.`
+            ${inputGraphname ? 'sd:namedGraph' : 'sd:defaultGraph'} graphs:${inputGraphId}.`
 
-        const metadataUrl = buildGraphUrl(this.metadataGraphStoreURL, this.metadataGraphname);
+        const metadataUrl = buildGraphUrl(metadataGraphStoreURL, metadataGraphname);
+        // console.log(initialMetadata);
         await httpCall(metadataUrl, {
             method: 'POST',
             headers: {'Content-Type': 'text/turtle'},
@@ -109,16 +100,19 @@ export default class ParametricQueriesStorage {
 
         if (overwriteOutputGraph) {
             await httpCall(this.outputUrl, {
-                method: 'DELETE'
+                method: 'PUT',
+                headers: {'Content-Type': 'text/turtle'},
+                body: ''
             });
         }
 
+        // console.log('End of recordProcessStart()');
         return actionId
     }
 
     async storeForest(forest, parentQueryId, actionId) {
-        const {outputGraphStoreURL, outputGraphname = null, overwriteOutputGraph = true} = this.options
 
+        // console.log('Begin of storeForest()');
         for (const query of forest) {
             const {text, instances, specializations, preamble} = query;
 
@@ -176,6 +170,12 @@ export default class ParametricQueriesStorage {
                 `;
 
                 for (const [paramIndex, bindingValue] of bindings.entries()) {
+                    // console.log(bindingValue);
+                    let rdfValue;
+                    try {
+                        rdfValue = rebaseTerm(bindingValue, mergePreambles(this.options.defaultPreamble, preamble));
+                    } catch(exception) {}
+                    // console.log(rdfValue);
                     // const bindingIri = ParametricQueriesStorage.escapeIri(`bindings:${lsqId}_${paramIndex}`)
                     // const paramIri = ParametricQueriesStorage.escapeIri(`params:${queryId}_${paramIndex}`)
                     queryTurtle += `
@@ -183,7 +183,8 @@ export default class ParametricQueriesStorage {
                         bindings:${lsqId}_${paramIndex}
                             a wfprov:Artifact;
                             wfprov:describedByParameter params:${queryId}_${paramIndex};
-                            rdf:value ${rebaseTerm(bindingValue, preamble)}.
+                            ${rdfValue ? `rdf:value ${rdfValue};` : ''}
+                            lsqv:text ${escapeLiteral(bindingValue)}. 
                     `; // wfprov:usedInput
                 }
                     // queryTurtle += `
@@ -196,21 +197,17 @@ export default class ParametricQueriesStorage {
             }
 
             // console.log(url)
-            console.log(queryTurtle)
+            // console.log(queryTurtle)
             // return queryTurtle;
             
-            const response = await fetch(this.outputUrl, {
+            await httpCall(this.outputUrl, {
                 method: 'POST',
                 headers: {'Content-Type': 'text/turtle'},
                 body: queryTurtle
             });
 
-            if (!response.ok) {
-                const message = await response.text();
-                throw new Error(message, { response });
-            }
-
             await this.storeForest(specializations, queryId);
+            // console.log('End of storeForest()');
             
         }
 
@@ -219,9 +216,8 @@ export default class ParametricQueriesStorage {
 
     async recordProcessCompletion(actionId) {
         const {
-            inputGraphStoreURL, inputGraphname = null,
-            outputGraphStoreURL = inputGraphStoreURL, outputGraphname = null,
-            metadataGraphStoreURL = outputGraphStoreURL, metadataGraphname = null
+            outputGraphStoreURL, outputGraphname = null,
+            metadataUpdateURL
         } = this.options
     
         const outputGraphId = encodeURIComponent(outputGraphStoreURL) + (outputGraphname ? '_' + encodeURIComponent(outputGraphname) : '')
@@ -233,7 +229,7 @@ export default class ParametricQueriesStorage {
         }
         INSERT {
             actions:${actionId} schema:actionStatus schema:CompletedActionStatus;
-                schema:endTime '${new Date().toISOString()}'^xsd:dateTime;
+                schema:endTime '${new Date().toISOString()}'^^xsd:dateTime;
                 schema:result graphs:${outputGraphId}.
 
             graphs:${outputGraphId} a ${outputGraphname ? `sd:NamedGraph; sd:name <${outputGraphname}>` : 'sd:Graph'}.
@@ -246,9 +242,8 @@ export default class ParametricQueriesStorage {
                 ${outputGraphname ? 'sd:namedGraph' : 'sd:defaultGraph'} inputs:${outputGraphId}.
         };`
 
-        const metadataUrl = buildGraphUrl(this.metadataGraphStoreURL, this.metadataGraphname);
-        await httpCall(metadataUrl, {
-            method: 'PATCH',
+        await httpCall(metadataUpdateURL, {
+            method: 'POST',
             headers: {'Content-Type': 'application/sparql-update'},
             body: metadataUpdate
         });

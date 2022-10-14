@@ -2,15 +2,19 @@ import fs from 'fs';
 
 import { parse } from 'csv-parse';
 import aggregateAndSpecialize from './aggregateAndSpecialize.js';
-import ParametricQueriesStorage from './storeForest.js'
+import ParametricQueriesStorage from './storeForest.js';
+import dbpediaPrefixes from './dbpediaPrefixes.json' assert { type: "json" };
 
 const queriesInputStream = fs.createReadStream('./output/queries_dbpedia_3.5.1_20100430.csv');
 // const queriesInputStream = fs.createReadStream('./output/query1.csv');
 
 const graphStoreURL = 'http://localhost:3030/lsqDev/data';
+const updateURL = 'http://localhost:3030/lsqDev/update';
 const inputGraphname = 'https://dbpedia.org/sparql';
 const outputGraphname = 'https://dbpedia.org/sparql/result/data';
 const metadataGraphname = 'https://dbpedia.org/sparql/result';
+
+// const dbpediaPrefixes = require('./dbpediaPrefixes.json');
 
 const parser = parse({
     delimiter: ',',
@@ -35,7 +39,10 @@ const aggregatePromise = aggregateAndSpecialize(parser, {
   // countInstances: true,
   // minBindingDivergenceRatio: 0.05,
   asArray: true,
-  minNumOfInstances: 2 
+  minNumOfInstances: 2,
+  defaultPreamble: {
+    prefixes: dbpediaPrefixes
+  }
   // showBindingDistributions: true
 });
   
@@ -47,8 +54,12 @@ async function main() {
     inputGraphStoreURL: graphStoreURL, 
     outputGraphStoreURL: graphStoreURL, 
     metadataGraphStoreURL: graphStoreURL, 
+    metadataUpdateURL: updateURL,
     inputGraphname, outputGraphname, metadataGraphname,
-    resourcesNs: 'http://sparql-clustering.org/'
+    resourcesNs: 'http://sparql-clustering.org/',
+    defaultPreamble: {
+      prefixes: dbpediaPrefixes
+    }
   })
   const actionId = await storage.recordProcessStart();
   const result = await aggregatePromise;
