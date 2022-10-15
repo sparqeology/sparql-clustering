@@ -1,5 +1,5 @@
 import Tokenizer from "./Tokenizer.js";
-import { parsePreamble } from "./turtleEncoding.js";
+import { parsePreamble } from "./sparqlEncoding.js";
 
 export function decomposeQuery(queryStr, options = {}) {
     const tokenizer = new Tokenizer(queryStr, options);
@@ -290,7 +290,7 @@ export function mergePreambles(preamble1, preamble2) {
         return preamble2;
     }
     return {
-        baseIRI: 'baseIRI' in preamble1 ? preamble1.baseIRI : preamble2.baseIRI,
+        base: 'base' in preamble1 ? preamble1.base : preamble2.base,
         prefixes: 'prefixes' in preamble1 ? 'prefixes' in preamble2 ? {...preamble1.prefixes, ...preamble2.prefixes} : preamble1.prefixes : preamble2.prefixes
     };
 }

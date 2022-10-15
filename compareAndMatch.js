@@ -64,22 +64,14 @@ async function main() {
   const actionId = await storage.recordProcessStart();
   const result = await aggregatePromise;
   fs.writeFileSync('./output/dbpedia/queryForest_3.5.1_20100430.json', JSON.stringify(result, null, 2), 'utf8');
+  console.time('storeResults');
   await storage.storeForest(result, null, actionId)
   await storage.recordProcessCompletion(actionId)
+  console.timeEnd('storeResults');
   console.timeEnd('main');
 }
 
-// console.time('main');
 main().then(result => {
-  // console.timeEnd('main');
-  // // fs.writeFileSync('./output/queryTreeExtended2.json', JSON.stringify(result, null, 2), 'utf8');
-  // // fs.writeFileSync('./output/queryTree_10_50.json', JSON.stringify(result, null, 2), 'utf8');
-  // // fs.writeFileSync('./output/queryRootsExtended_minExecs_50.json', JSON.stringify(result, null, 2), 'utf8');
-  // fs.writeFileSync('./output/dbpedia/queryForest_3.5.1.json', JSON.stringify(result, null, 2), 'utf8');
-  // // fs.writeFileSync('./output/queryRoots_10_50.json', JSON.stringify(result, null, 2), 'utf8');
-  // // fs.writeFileSync('./output/queryRootsAsArray.json', JSON.stringify(result, null, 2), 'utf8');
-  // // fs.writeFileSync('./output/queryTreeExtended_10_50.json', JSON.stringify(result, null, 2), 'utf8');
-
 }, err => {
   console.error(err);
 });

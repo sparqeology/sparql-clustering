@@ -1,8 +1,9 @@
-import fetch from 'node-fetch';
 import crypto from 'crypto';
 import {v4 as uuidv4} from 'uuid';
 import { rebaseTerm, escapeLiteral } from './turtleEncoding.js';
 import { mergePreambles } from './queryHandling.js';
+import SparqlGraphConnection from './sparqlGraphConnection.js';
+import httpCall from './httpCall.js';
 
 function md5(str) {
     return crypto.createHash('md5').update(str).digest("hex")
@@ -10,15 +11,6 @@ function md5(str) {
 
 function escapeLsqId(lsqId) {
     return lsqId.replaceAll('-', '_')
-}
-
-async function httpCall(url, options) {
-    const response = await fetch(url, options);
-
-    if (!response.ok) {
-        const message = await response.text();
-        throw new Error(message, { response });
-    }
 }
 
 function buildGraphUrl(graphStoreUrl, graphname) {
@@ -32,39 +24,38 @@ export default class ParametricQueriesStorage {
         this.options = options;
         const {resourcesNs, outputGraphStoreURL, outputGraphname = null} = this.options;
         this.preamble = `
-        @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-        @prefix lsqv: <http://lsq.aksw.org/vocab#>.
-        @prefix prov: <http://www.w3.org/ns/prov#> .
-        @prefix prv: <http://purl.org/net/provenance/ns#>.
-        @prefix prvTypes: <http://purl.org/net/provenance/types#>.
-        @prefix wfprov: <http://purl.org/wf4ever/wfprov#>.
-        @prefix sh: <http://www.w3.org/ns/shacl#>.
+        PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+        PREFIX lsqv: <http://lsq.aksw.org/vocab#>
+        PREFIX prov: <http://www.w3.org/ns/prov#>
+        PREFIX prv: <http://purl.org/net/provenance/ns#>
+        PREFIX prvTypes: <http://purl.org/net/provenance/types#>
+        PREFIX wfprov: <http://purl.org/wf4ever/wfprov#>
+        PREFIX sh: <http://www.w3.org/ns/shacl#>
 
-        @prefix lsqQueries: <http://lsq.aksw.org/lsqQuery->.
-        @prefix actions: <${resourcesNs}actions/>.
-        @prefix templates: <${resourcesNs}templates/>.
-        @prefix executions: <${resourcesNs}executions/>.
-        @prefix queryGenerations: <${resourcesNs}queryGenerations/>.
-        @prefix params: <${resourcesNs}params/>.
-        @prefix bindings: <${resourcesNs}bindings/>.
-        @prefix paramPaths: <${resourcesNs}paramPaths/>.
+        PREFIX lsqQueries: <http://lsq.aksw.org/lsqQuery->
+        PREFIX actions: <${resourcesNs}actions/>
+        PREFIX templates: <${resourcesNs}templates/>
+        PREFIX executions: <${resourcesNs}executions/>
+        PREFIX queryGenerations: <${resourcesNs}queryGenerations/>
+        PREFIX params: <${resourcesNs}params/>
+        PREFIX bindings: <${resourcesNs}bindings/>
+        PREFIX paramPaths: <${resourcesNs}paramPaths/>
         `;
         this.metadataPreamble = `
-        @prefix schema: <https://schema.org/> .
-        @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-        @prefix sd: <http://www.w3.org/ns/sparql-service-description#>.
+        PREFIX schema: <https://schema.org/>
+        PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+        PREFIX sd: <http://www.w3.org/ns/sparql-service-description#>
         
-        @prefix actions: <${resourcesNs}actions/>.
-        @prefix graphs: <${resourcesNs}graphs/>.
-        @prefix services: <${resourcesNs}services/>.
-        @prefix datasets: <${resourcesNs}datasets/>.
+        PREFIX actions: <${resourcesNs}actions/>
+        PREFIX graphs: <${resourcesNs}graphs/>
+        PREFIX services: <${resourcesNs}services/>
+        PREFIX datasets: <${resourcesNs}datasets/>
         `;
 
         this.outputUrl = buildGraphUrl(outputGraphStoreURL, outputGraphname);
     }
 
     async recordProcessStart() {
-        // console.log('Begin of recordProcessStart()');
         const {
             inputGraphStoreURL, inputGraphname = null,
             metadataGraphStoreURL, metadataGraphname = null,
@@ -91,7 +82,6 @@ export default class ParametricQueriesStorage {
             ${inputGraphname ? 'sd:namedGraph' : 'sd:defaultGraph'} graphs:${inputGraphId}.`
 
         const metadataUrl = buildGraphUrl(metadataGraphStoreURL, metadataGraphname);
-        // console.log(initialMetadata);
         await httpCall(metadataUrl, {
             method: 'POST',
             headers: {'Content-Type': 'text/turtle'},
@@ -106,31 +96,19 @@ export default class ParametricQueriesStorage {
             });
         }
 
-        // console.log('End of recordProcessStart()');
+        this.outputGraphConnection = new SparqlGraphConnection(this.outputUrl, {
+            preamble: this.preamble
+        })
+
         return actionId
     }
 
     async storeForest(forest, parentQueryId, actionId) {
 
-        // console.log('Begin of storeForest()');
         for (const query of forest) {
             const {text, instances, specializations, preamble} = query;
 
             const queryId = ++this.queryCount;
-
-            // const queryTurtle = `
-            //     @prefix pasq: <http://pasq.org/pasq/>. 
-            //     @prefix queries: <${queryNs}>.
-
-            //     ` + (parentQueryId === undefined ?
-            //         `queries:${queryId} a pasq:TopParametricQuery.` :
-            //         `queries:${parentQueryId} pasq:specialization queries:${queryId}.`) `
-
-            //     queries:${queryId}
-            //         a pasq:ParametricQuery;
-            //         pasq:id ${queryId};
-            //         pasq:queryText "${text}".
-            // `;
 
             var queryTurtle = this.preamble +
                 (parentQueryId ?
@@ -153,12 +131,8 @@ export default class ParametricQueriesStorage {
                 `;
             }
 
-            //  templates:${queryId} sh:parameter ...
-
             for (const {id: lsqIdUnesc, bindings} of instances) {
-                // const lsqId = escapeIriFragment(lsqIdUnesc)
                 const lsqId = escapeLsqId(lsqIdUnesc)
-                // const queryGenerationIri = escapeIri(`queryGenerations:${queryId}_${lsqId}`)
                 queryTurtle += `
                     queryGenerations:${queryId}_${lsqId}
                         a  prvTypes:DataCreation;
@@ -170,14 +144,10 @@ export default class ParametricQueriesStorage {
                 `;
 
                 for (const [paramIndex, bindingValue] of bindings.entries()) {
-                    // console.log(bindingValue);
                     let rdfValue;
                     try {
                         rdfValue = rebaseTerm(bindingValue, mergePreambles(this.options.defaultPreamble, preamble));
                     } catch(exception) {}
-                    // console.log(rdfValue);
-                    // const bindingIri = ParametricQueriesStorage.escapeIri(`bindings:${lsqId}_${paramIndex}`)
-                    // const paramIri = ParametricQueriesStorage.escapeIri(`params:${queryId}_${paramIndex}`)
                     queryTurtle += `
                         queryGenerations:${queryId}_${lsqId} prv:usedData bindings:${lsqId}_${paramIndex}.
                         bindings:${lsqId}_${paramIndex}
@@ -187,28 +157,10 @@ export default class ParametricQueriesStorage {
                             lsqv:text ${escapeLiteral(bindingValue)}. 
                     `; // wfprov:usedInput
                 }
-                    // queryTurtle += `
-                //     queryExecutions:${lsqId} prv:usedGuideline queries:${queryId}.
-
-                //     queryExecutions:${lsqId}
-                //         a prvTypes:QueryTemplate;
-                //         pasq:queryText "${text}".
-                // `;
             }
 
-            // console.log(url)
-            // console.log(queryTurtle)
-            // return queryTurtle;
-            
-            await httpCall(this.outputUrl, {
-                method: 'POST',
-                headers: {'Content-Type': 'text/turtle'},
-                body: queryTurtle
-            });
-
+            this.outputGraphConnection.post(queryTurtle);
             await this.storeForest(specializations, queryId);
-            // console.log('End of storeForest()');
-            
         }
 
 
@@ -220,14 +172,16 @@ export default class ParametricQueriesStorage {
             metadataUpdateURL
         } = this.options
     
+        await this.outputGraphConnection.flush();
+
         const outputGraphId = encodeURIComponent(outputGraphStoreURL) + (outputGraphname ? '_' + encodeURIComponent(outputGraphname) : '')
         const outputGraphStoreId = encodeURIComponent(outputGraphStoreURL)
 
         const metadataUpdate = this.metadataPreamble + `
-        DELETE {
+        DELETE DATA {
             actions:${actionId} schema:actionStatus schema:ActiveActionStatus
-        }
-        INSERT {
+        };
+        INSERT DATA {
             actions:${actionId} schema:actionStatus schema:CompletedActionStatus;
                 schema:endTime '${new Date().toISOString()}'^^xsd:dateTime;
                 schema:result graphs:${outputGraphId}.
@@ -239,7 +193,7 @@ export default class ParametricQueriesStorage {
                 sd:defaultDataset datasets:${outputGraphStoreId}.
     
             datasets:${outputGraphStoreId} a sd:Dataset;
-                ${outputGraphname ? 'sd:namedGraph' : 'sd:defaultGraph'} inputs:${outputGraphId}.
+                ${outputGraphname ? 'sd:namedGraph' : 'sd:defaultGraph'} graphs:${outputGraphId}.
         };`
 
         await httpCall(metadataUpdateURL, {
@@ -250,43 +204,3 @@ export default class ParametricQueriesStorage {
     }
     
 }
-
-// async function test() {
-//     const graphStoreURI = 'http://localhost:3030/lsq2/data';
-//     const graphname = 'http://example.org/test';
-//     const queryNs = 'http://example.org/test/queries/';
-
-//     const id1 = 'ID_001';
-//     const id2 = 'ID_002';
-//     const queryText = 'SELECT * WHERE {?s ?p ?o}';
-
-//     const queryTurtle = `
-//         @prefix pasq: <http://pasq.org/pasq/>. 
-//         @prefix queries: <${queryNs}>.
-
-//         queries:${id1}
-//             pasq:specialization queries:${id2};
-//             pasq:queryText "${queryText}".
-//     `;
-
-//     console.log(graphStoreURI + '?graph=' + encodeURIComponent(graphname))
-//     // return queryTurtle;
-    
-//     const response = await fetch(graphStoreURI + '?graph=' + encodeURIComponent(graphname), {
-//         method: 'POST',
-//         headers: {'Content-Type': 'text/turtle'},
-//         body: queryTurtle
-//     });
-
-//     if (!response.ok) {
-//         const message = await response.text();
-//         throw new Error(message, { response });
-//     }
-//     return response.status
-// }
-
-// test().then(result => {
-//     console.log(result);
-// }, err => {
-//     console.error(err);
-// });

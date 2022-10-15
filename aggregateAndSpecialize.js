@@ -1,5 +1,5 @@
 import {buildSpecializationTree, createGeneralizedQuery, toString, mergePreambles} from './queryHandling.js';
-import {preambleToString} from './turtleEncoding.js'
+import {preambleToString} from './sparqlEncoding.js'
 
 function aggregateInstances({instances, specializations, ...queryData}) {
     return {
