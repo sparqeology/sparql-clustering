@@ -27,6 +27,7 @@
     "node-fetch": "^3.2.10",
     "rdf-parse": "^2.0.0",
     "sparqljs": "^3.5.2",
+    "stream-to-async-iterator": "^1.0.0",
     "uuid": "^9.0.0"
   }
 }
