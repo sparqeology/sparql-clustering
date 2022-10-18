@@ -1,7 +1,6 @@
 import {SparqlEndpointFetcher} from "fetch-sparql-endpoint";
 import S2A from 'stream-to-async-iterator';
 const StreamToAsyncIterator = S2A.default;
-console.log(StreamToAsyncIterator);
 
 const endpointFetcher = new SparqlEndpointFetcher();
 
@@ -27,8 +26,19 @@ function castRDFTerm(rdfTerm) {
     return null;
 }
 
-export default async function* queryEndpoint(endpointUrl, queryStr) {
-    const bindingsStream = await endpointFetcher.fetchBindings(endpointUrl, queryStr);
+export function buildStoreGraphUrl(graphStoreUrl, graphname) {
+    return graphStoreUrl + '?' + (graphname ? 'graph=' + encodeURIComponent(graphname) : 'defaultGraph')
+}
+
+export function buildEndpointGraphsUrl(graphStoreUrl, graphnames) {
+    return graphStoreUrl + '?' +
+        (graphnames ? graphnames.map(graphname => 'default-graph-uri=' + encodeURIComponent(graphname)).join('&')  : '');
+}
+
+
+export default async function* queryEndpoint(endpointUrl, graphnames, queryStr) {
+    const url = buildEndpointGraphsUrl(endpointUrl, graphnames);
+    const bindingsStream = await endpointFetcher.fetchBindings(url, queryStr);
     for await (const bindings of new StreamToAsyncIterator(bindingsStream)) {
         yield Object.fromEntries(Object.entries(bindings).map(([varname, value]) => [varname,castRDFTerm(value)]));
     }

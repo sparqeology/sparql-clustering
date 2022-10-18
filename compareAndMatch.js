@@ -51,7 +51,7 @@ queriesInputStream.pipe(parser);
 async function main() {
   console.time('main');
   const storage = new ParametricQueriesStorage({
-    inputGraphStoreURL: graphStoreURL, 
+    inputEndpointURL: graphStoreURL, 
     outputGraphStoreURL: graphStoreURL, 
     metadataGraphStoreURL: graphStoreURL, 
     metadataUpdateURL: updateURL,

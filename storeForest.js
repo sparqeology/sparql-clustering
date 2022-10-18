@@ -4,6 +4,7 @@ import { rebaseTerm, escapeLiteral } from './turtleEncoding.js';
 import { mergePreambles } from './queryHandling.js';
 import SparqlGraphConnection from './sparqlGraphConnection.js';
 import httpCall from './httpCall.js';
+import { buildStoreGraphUrl } from './queryEndpoint.js';
 
 function md5(str) {
     return crypto.createHash('md5').update(str).digest("hex")
@@ -11,10 +12,6 @@ function md5(str) {
 
 function escapeLsqId(lsqId) {
     return lsqId.replaceAll('-', '_')
-}
-
-function buildGraphUrl(graphStoreUrl, graphname) {
-    return graphStoreUrl + '?' + (graphname ? 'graph=' + encodeURIComponent(graphname) : 'defaultGraph')
 }
 
 export default class ParametricQueriesStorage {
@@ -52,36 +49,38 @@ export default class ParametricQueriesStorage {
         PREFIX datasets: <${resourcesNs}datasets/>
         `;
 
-        this.outputUrl = buildGraphUrl(outputGraphStoreURL, outputGraphname);
+        this.outputUrl = buildStoreGraphUrl(outputGraphStoreURL, outputGraphname);
     }
 
     async recordProcessStart() {
         const {
-            inputGraphStoreURL, inputGraphname = null,
+            inputEndpointURL, inputGraphnames = null,
             metadataGraphStoreURL, metadataGraphname = null,
             overwriteOutputGraph = true
         } = this.options
 
         const actionId = uuidv4()
-        const inputGraphId = encodeURIComponent(inputGraphStoreURL) + (inputGraphname ? '_' + encodeURIComponent(inputGraphname) : '')
-        const inputGraphStoreId = encodeURIComponent(inputGraphStoreURL)
+        const inputGraphStoreId = encodeURIComponent(inputEndpointURL)
 
         const initialMetadata = this.metadataPreamble + `
         actions:${actionId} a schema:Action;
             schema:startTime '${new Date().toISOString()}'^^xsd:dateTime;
-            schema:actionStatus schema:ActiveActionStatus;
-            schema:object graphs:${inputGraphId}.
+            schema:actionStatus schema:ActiveActionStatus.
         
-        graphs:${inputGraphId} a ${inputGraphname ? `sd:NamedGraph; sd:name <${inputGraphname}>` : 'sd:Graph'}.
-
         services:${inputGraphStoreId} a sd:Service;
-            sd:endpoint <${inputGraphStoreURL}>;
-            sd:defaultDataset datasets:${inputGraphStoreId}.
+            sd:endpoint <${inputEndpointURL}>;
+            sd:defaultDataset datasets:${inputGraphStoreId}.` +
 
-        datasets:${inputGraphStoreId} a sd:Dataset;
-            ${inputGraphname ? 'sd:namedGraph' : 'sd:defaultGraph'} graphs:${inputGraphId}.`
+        (inputGraphnames || [null]).map(inputGraphname => {
+            const inputGraphId = encodeURIComponent(inputEndpointURL) + (inputGraphname ? '_' + encodeURIComponent(inputGraphname) : '')
+            return `
+            actions:${actionId} schema:object graphs:${inputGraphId}.
+            graphs:${inputGraphId} a ${inputGraphname ? `sd:NamedGraph; sd:name <${inputGraphname}>` : 'sd:Graph'}.
+            datasets:${inputGraphStoreId} a sd:Dataset;
+                ${inputGraphname ? 'sd:namedGraph' : 'sd:defaultGraph'} graphs:${inputGraphId}.`;
+        }).join('');
 
-        const metadataUrl = buildGraphUrl(metadataGraphStoreURL, metadataGraphname);
+        const metadataUrl = buildStoreGraphUrl(metadataGraphStoreURL, metadataGraphname);
         await httpCall(metadataUrl, {
             method: 'POST',
             headers: {'Content-Type': 'text/turtle'},
