@@ -7,6 +7,19 @@ import queryEndpoint from './queryEndpoint.js';
 
 const queryText = fs.readFileSync('./queries.rq');
 
+/**
+ * Run the aggregation process
+ * @param  {object} options Options to configure the process
+ * @param  {string} options.inputEndpointURL URL of the endpoint from which source data is read
+ * @param  {string[]} options.inputGraphnames Optionally, array of IRIs corresponding to the graph names from which the data source is read (if undefined or empty, the default graph is used)
+ * @param  {string} options.outputGraphStoreURL URL of the graph store to which the output is written
+ * @param  {string} options.outputGraphname Optionally, IRI corresponding to the graph name to which the output is written (if undefined, the default graph is used)
+ * @param  {boolean} options.overwriteOutputGraph If true, the target graph for the result is overwritten. Otherwise, the results are added to the current content of the graph.
+ * @param  {string} options.metadataGraphStoreURL URL of the graph store to which the metadata about process execution is written
+ * @param  {string} options.metadataUpdateURL URL of the update endpoint used to update the metadata about process execution (maust correspond to the same triple store as options.metadataGraphStoreURL)
+ * @param  {string} options.metadataGraphname Optionally, IRI corresponding to the graph name to which the metadata about process execution is written (if undefined, the default graph is used)
+ * @param  {string} options.resourcesNs Root namespace used to mint resource IRIs
+ */
 export default async function runAggregation(options) {
     console.time('main');
     const storage = new ParametricQueriesStorage(options)
