@@ -63,7 +63,12 @@ export default async function aggregateAndSpecialize(queryStream, options = {}) 
         if (queryCounter % 1000 === 0) {
             process.stdout.write(('' + queryCounter / 1000).padStart(8, ' ') + ' K\r');
         }
-        queryForest.push(buildSpecializationTree(queryData, options));
+        if ((!options.minNumOfInstances ||
+                queryData.instances.length >= options.minNumOfInstances)
+            && (!options.minNumOfExecutions ||
+                queryData.instances.reduce((sum, instance) => sum + instance.numOfExecutions, 0) >= options.minNumOfExecutions)) {
+            queryForest.push(buildSpecializationTree(queryData, options));
+        }
         queryCounter++;
     }
     console.timeEnd('build specialization forest');
