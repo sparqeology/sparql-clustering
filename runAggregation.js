@@ -19,7 +19,17 @@ const queryText = fs.readFileSync('./queries.rq');
  * @param  {string} options.metadataUpdateURL URL of the update endpoint used to update the metadata about process execution (maust correspond to the same triple store as options.metadataGraphStoreURL)
  * @param  {string} options.metadataGraphname Optionally, IRI corresponding to the graph name to which the metadata about process execution is written (if undefined, the default graph is used)
  * @param  {string} options.resourcesNs Root namespace used to mint resource IRIs
- */
+ * @param  {boolean} options.excludePreamble If true, query preambles are not considered for aggregation (defaults to false)
+ * @param  {boolean} options.sparqlParameters If true, parameters are represented in the query string format preserving SPARQL syntax (defaults to false)
+ * @param  {number} options.maxTokens Optionally, max number of tokens that are parsed for each query
+ * @param  {number} options.minNumOfInstances Optionally, min number of instances that a parametric query must have to be in the output
+ * @param  {number} options.minNumOfExecutions Optionally, min number of executions that a parametric query must have to be in the output
+ * @param  {number} options.minNumOfInstancesInSubclass Optionally, min number of instances that a parametric query must have to be in the output as specilization of a parent query
+ * @param  {number} options.minNumOfExecutionsInSubclass Optionally, min number of executions that a parametric query must have to be in the output as specilization of a parent query
+ * @param  {number} options.bufferSize Size (in bytes) of the buffer used while storing the output (defaults to 5MB)
+ * @param  {number} options.maxCalls Max number of simultaneous serve calls performed for storing the output (defaults to 10)
+ * @param  {object} options.defaultPreamble Default preamble object defining prefixes and optionally a base IRI.
+*/
 export default async function runAggregation(options) {
     console.time('main');
     const storage = new ParametricQueriesStorage(options)
