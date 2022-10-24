@@ -109,8 +109,7 @@ export default class ParametricQueriesStorage {
 
             const queryId = ++this.queryCount;
 
-            var queryTurtle = this.preamble +
-                (parentQueryId ?
+            var queryTurtle = (parentQueryId ?
                     `templates:${queryId} prov:specializationOf  templates:${parentQueryId}.` :
                     `templates:${queryId} prov:wasGeneratedBy actions:${actionId}.`) + `
                 templates:${queryId}
@@ -171,7 +170,7 @@ export default class ParametricQueriesStorage {
             metadataUpdateURL
         } = this.options
     
-        await this.outputGraphConnection.flush();
+        await this.outputGraphConnection.sync();
 
         const outputGraphId = encodeURIComponent(outputGraphStoreURL) + (outputGraphname ? '_' + encodeURIComponent(outputGraphname) : '')
         const outputGraphStoreId = encodeURIComponent(outputGraphStoreURL)
