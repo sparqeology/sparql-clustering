@@ -15,7 +15,6 @@ const queryText = fs.readFileSync('./queries.rq');
  * @param  {string} options.outputGraphStoreURL URL of the graph store to which the output is written
  * @param  {string} options.outputGraphname Optionally, IRI corresponding to the graph name to which the output is written (if undefined, the default graph is used)
  * @param  {boolean} options.overwriteOutputGraph If true, the target graph for the result is overwritten. Otherwise, the results are added to the current content of the graph.
- * @param  {string} options.metadataGraphStoreURL URL of the graph store to which the metadata about process execution is written
  * @param  {string} options.metadataUpdateURL URL of the update endpoint used to update the metadata about process execution (maust correspond to the same triple store as options.metadataGraphStoreURL)
  * @param  {string} options.metadataGraphname Optionally, IRI corresponding to the graph name to which the metadata about process execution is written (if undefined, the default graph is used)
  * @param  {string} options.resourcesNs Root namespace used to mint resource IRIs
@@ -71,7 +70,7 @@ async function test() {
         // showBindingDistributions: true
         inputEndpointURL: endpointURL, 
         outputGraphStoreURL: graphStoreURL, 
-        metadataGraphStoreURL: graphStoreURL, 
+        // metadataGraphStoreURL: graphStoreURL, 
         metadataUpdateURL: updateURL,
         inputGraphnames, outputGraphname, metadataGraphname,
         resourcesNs: 'http://sparql-clustering.org/',

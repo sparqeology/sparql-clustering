@@ -55,36 +55,39 @@ export default class ParametricQueriesStorage {
     async recordProcessStart() {
         const {
             inputEndpointURL, inputGraphnames = null,
-            metadataGraphStoreURL, metadataGraphname = null,
+            metadataUpdateURL, metadataGraphname = null,
             overwriteOutputGraph = true
         } = this.options
 
         const actionId = uuidv4()
         const inputGraphStoreId = encodeURIComponent(inputEndpointURL)
 
-        const initialMetadata = this.metadataPreamble + `
-        actions:${actionId} a schema:Action;
-            schema:startTime '${new Date().toISOString()}'^^xsd:dateTime;
-            schema:actionStatus schema:ActiveActionStatus.
-        
-        services:${inputGraphStoreId} a sd:Service;
-            sd:endpoint <${inputEndpointURL}>;
-            sd:defaultDataset datasets:${inputGraphStoreId}.` +
+        const metadataSetup = this.metadataPreamble + `
+        INSERT DATA {
+            ${metadataGraphname ? `GRAPH <${metadataGraphname}> {` : ''}
+                actions:${actionId} a schema:Action;
+                    schema:startTime '${new Date().toISOString()}'^^xsd:dateTime;
+                    schema:actionStatus schema:ActiveActionStatus.
+            
+                services:${inputGraphStoreId} a sd:Service;
+                    sd:endpoint <${inputEndpointURL}>;
+                    sd:defaultDataset datasets:${inputGraphStoreId}.
 
-        (inputGraphnames || [null]).map(inputGraphname => {
-            const inputGraphId = encodeURIComponent(inputEndpointURL) + (inputGraphname ? '_' + encodeURIComponent(inputGraphname) : '')
-            return `
-            actions:${actionId} schema:object graphs:${inputGraphId}.
-            graphs:${inputGraphId} a ${inputGraphname ? `sd:NamedGraph; sd:name <${inputGraphname}>` : 'sd:Graph'}.
-            datasets:${inputGraphStoreId} a sd:Dataset;
-                ${inputGraphname ? 'sd:namedGraph' : 'sd:defaultGraph'} graphs:${inputGraphId}.`;
-        }).join('');
+                ${(inputGraphnames || [null]).map(inputGraphname => {
+                    const inputGraphId = encodeURIComponent(inputEndpointURL) + (inputGraphname ? '_' + encodeURIComponent(inputGraphname) : '')
+                    return `
+                    actions:${actionId} schema:object graphs:${inputGraphId}.
+                    graphs:${inputGraphId} a ${inputGraphname ? `sd:NamedGraph; sd:name <${inputGraphname}>` : 'sd:Graph'}.
+                    datasets:${inputGraphStoreId} a sd:Dataset;
+                        ${inputGraphname ? 'sd:namedGraph' : 'sd:defaultGraph'} graphs:${inputGraphId}.`;
+                }).join('')}
+            ${metadataGraphname ? '}' : ''}
+        };`
 
-        const metadataUrl = buildStoreGraphUrl(metadataGraphStoreURL, metadataGraphname);
-        await httpCall(metadataUrl, {
+        await httpCall(metadataUpdateURL, {
             method: 'POST',
-            headers: {'Content-Type': 'text/turtle'},
-            body: initialMetadata
+            headers: {'Content-Type': 'application/sparql-update'},
+            body: metadataSetup
         });
 
         if (overwriteOutputGraph) {
@@ -167,7 +170,7 @@ export default class ParametricQueriesStorage {
     async recordProcessCompletion(actionId) {
         const {
             outputGraphStoreURL, outputGraphname = null,
-            metadataUpdateURL
+            metadataUpdateURL, metadataGraphname = null
         } = this.options
     
         await this.outputGraphConnection.sync();
@@ -177,21 +180,26 @@ export default class ParametricQueriesStorage {
 
         const metadataUpdate = this.metadataPreamble + `
         DELETE DATA {
-            actions:${actionId} schema:actionStatus schema:ActiveActionStatus
+            ${metadataGraphname ? `GRAPH <${metadataGraphname}> {` : ''}
+                actions:${actionId} schema:actionStatus schema:ActiveActionStatus
+            ${metadataGraphname ? '}' : ''}
         };
+        
         INSERT DATA {
-            actions:${actionId} schema:actionStatus schema:CompletedActionStatus;
-                schema:endTime '${new Date().toISOString()}'^^xsd:dateTime;
-                schema:result graphs:${outputGraphId}.
+            ${metadataGraphname ? `GRAPH <${metadataGraphname}> {` : ''}
+                actions:${actionId} schema:actionStatus schema:CompletedActionStatus;
+                    schema:endTime '${new Date().toISOString()}'^^xsd:dateTime;
+                    schema:result graphs:${outputGraphId}.
 
-            graphs:${outputGraphId} a ${outputGraphname ? `sd:NamedGraph; sd:name <${outputGraphname}>` : 'sd:Graph'}.
+                graphs:${outputGraphId} a ${outputGraphname ? `sd:NamedGraph; sd:name <${outputGraphname}>` : 'sd:Graph'}.
 
-            services:${outputGraphStoreId} a sd:Service;
-                sd:endpoint <${outputGraphStoreURL}>;
-                sd:defaultDataset datasets:${outputGraphStoreId}.
-    
-            datasets:${outputGraphStoreId} a sd:Dataset;
-                ${outputGraphname ? 'sd:namedGraph' : 'sd:defaultGraph'} graphs:${outputGraphId}.
+                services:${outputGraphStoreId} a sd:Service;
+                    sd:endpoint <${outputGraphStoreURL}>;
+                    sd:defaultDataset datasets:${outputGraphStoreId}.
+        
+                datasets:${outputGraphStoreId} a sd:Dataset;
+                    ${outputGraphname ? 'sd:namedGraph' : 'sd:defaultGraph'} graphs:${outputGraphId}.
+            ${metadataGraphname ? '}' : ''}
         };`
 
         await httpCall(metadataUpdateURL, {
