@@ -28,7 +28,7 @@ const queryText = fs.readFileSync('./queries.rq');
  * @param  {number} options.minNumOfExecutionsInSubclass Optionally, min number of executions that a parametric query must have to be in the output as specilization of a parent query
  * @param  {number} options.bufferSize Size (in bytes) of the buffer used while storing the output (defaults to 5MB)
  * @param  {number} options.maxCalls Max number of simultaneous serve calls performed for storing the output (defaults to 10)
- * @param  {object} options.defaultPreamble Default preamble object defining prefixes and optionally a base IRI.
+ * @param  {object} options.defaultPreamble Default preamble object used for IRI expansion on top of in-query preamble.
 */
 export default async function runAggregation(options) {
     console.time('main');
