@@ -24,12 +24,10 @@ PREFIX lsqv: <http://lsq.aksw.org/vocab#>
 
 SELECT ?id ?text (COUNT(?exec) AS ?numOfExecutions) (COUNT(DISTINCT ?host) AS ?numOfHosts)
 WHERE {
-#  GRAPH <https://dbpedia.org/sparql> {
     ?query lsqv:hash ?id;
           lsqv:text ?text;
           lsqv:hasRemoteExec ?exec.
     ?exec lsqv:hostHash ?host.
-#  }
 }
 GROUP BY ?id ?text
 #LIMIT 25
