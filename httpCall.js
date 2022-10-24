@@ -5,6 +5,6 @@ export default async function httpCall(url, options) {
 
     if (!response.ok) {
         const message = await response.text();
-        throw new Error(message, { response });
+        throw new Error(message, { response, cause: {url, options} });
     }
 }
