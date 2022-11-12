@@ -14,6 +14,8 @@ function escapeLsqId(lsqId) {
     return lsqId.replaceAll('-', '_')
 }
 
+const LSQ_QUERIES_PREFIX = 'http://lsq.aksw.org/lsqQuery-';
+
 export default class ParametricQueriesStorage {
     queryCount = 0;
 
@@ -139,7 +141,7 @@ export default class ParametricQueriesStorage {
                         a  prvTypes:DataCreation;
                         prv:usedGuideline templates:${queryId}.
 
-                    lsqQueries:${lsqId}
+                    <${LSQ_QUERIES_PREFIX}${lsqIdUnesc}>
                         a prvTypes:SPARQLQuery;
                         prv:createdBy queryGenerations:${queryId}_${lsqId}.
                 `;
