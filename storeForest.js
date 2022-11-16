@@ -116,7 +116,8 @@ export default class ParametricQueriesStorage {
 
             var queryTurtle = (parentQueryId ?
                     `templates:${queryId} prov:specializationOf  templates:${parentQueryId}.` :
-                    `templates:${queryId} prov:wasGeneratedBy actions:${actionId}.`) + `
+                    // `templates:${queryId} prov:wasGeneratedBy actions:${actionId}.`) + `
+                    `actions:${actionId} schema:result templates:${queryId}.`) + `
                 templates:${queryId}
                     a prvTypes:QueryTemplate, sh:Parametrizable;
                     lsqv:text ${escapeLiteral(text)}.
@@ -164,6 +165,19 @@ export default class ParametricQueriesStorage {
 
             this.outputGraphConnection.post(queryTurtle);
             await this.storeForest(specializations, queryId);
+        }
+
+
+    }
+
+    async linkSingleQueries(queryLsqIds, actionId) {
+
+        for (const lsqId of queryLsqIds) {
+            var queryTurtle = `
+            actions:${actionId} schema:result  <${LSQ_QUERIES_PREFIX}${lsqId}>.
+            <${LSQ_QUERIES_PREFIX}${lsqId}> a prvTypes:SPARQLQuery.
+            `;
+            this.outputGraphConnection.post(queryTurtle);
         }
 
 

@@ -36,19 +36,32 @@ export default async function runAggregation(options) {
     const queries = queryEndpoint(options.inputEndpointURL, options.inputGraphnames, queryText);
     const result = await aggregateAndSpecialize(queries, options);
     console.time('storeResults');
-    await storage.storeForest(result, null, actionId)
-    await storage.recordProcessCompletion(actionId)
+    if (options.includeSimpleQueries) {
+        await storage.storeForest(result.queryForest, null, actionId);
+        await storage.linkSingleQueries(result.nonClusterizedQueries, actionId);
+    } else {
+        await storage.storeForest(result, null, actionId);
+    }
+    await storage.recordProcessCompletion(actionId);
     console.timeEnd('storeResults');
     console.timeEnd('main');
 }
 
 async function test() {
-    const graphStoreURL = 'http://localhost:3030/lsqDev/data';
-    const endpointURL = 'http://localhost:3030/lsqDev/query';
-    const updateURL = 'http://localhost:3030/lsqDev/update';
-    const inputGraphnames = ['https://dbpedia.org/sparql'];
-    const outputGraphname = 'https://dbpedia.org/sparql/result/data';
-    const metadataGraphname = 'https://dbpedia.org/sparql/result';
+    // const graphStoreURL = 'http://localhost:3030/lsqDev/data';
+    // const endpointURL = 'http://localhost:3030/lsqDev/query';
+    // const updateURL = 'http://localhost:3030/lsqDev/update';
+    // const inputGraphnames = ['https://dbpedia.org/sparql'];
+    // const outputGraphname = 'https://dbpedia.org/sparql/result/data';
+    // const metadataGraphname = 'https://dbpedia.org/sparql/result';
+    // bench-dbpedia-20151025-lsq2
+    const datasetName = 'bench-kegg-lsq2';
+    const graphStoreURL = 'http://localhost:3030/lsq2/data';
+    const endpointURL = 'http://localhost:3030/lsq2/query';
+    const updateURL = 'http://localhost:3030/lsq2/update';
+    const inputGraphnames = [`http://lsq.aksw.org/datasets/${datasetName}`];
+    const outputGraphname = `http://lsq.aksw.org/results/${datasetName}`;
+    const metadataGraphname = 'http://lsq.aksw.org/results';
 
     await runAggregation({
         // maxVars: 3,
@@ -59,7 +72,7 @@ async function test() {
         // minNumOfExecutions: 50,
         // minNumOfHosts: 10,
         sparqlParameters: true,
-        // includeSimpleQueries: true,
+        includeSimpleQueries: true,
         // countInstances: true,
         // minBindingDivergenceRatio: 0.05,
         asArray: true,
