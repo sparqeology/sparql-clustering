@@ -45,7 +45,9 @@ export default class SparqlGraphConnection {
                 this.buffer.toString('utf-8', 0, this.bufferPosition) +
                 (lastTurtleStr || '');
         this.buffer.fill();
+        this.bufferPosition = 0;
         await this._waitTillWaitingCallsAre(this.maxCalls);
+        // console.log('Calling POST to ' + this.url + ' with content: ' + payload);
         const callPromise = httpCall(this.url, {
             method: 'POST',
             headers: {'Content-Type': 'text/turtle'},
@@ -60,8 +62,12 @@ export default class SparqlGraphConnection {
     }
 
     async sync() {
+        // console.log('Flushing connection... ');
         await this._flush();
+        // console.log('Done!');
+        // console.log('Waiting for responses...');
         await this._waitTillWaitingCallsAre(0);
+        // console.log('Done!');
     }
 
 }
