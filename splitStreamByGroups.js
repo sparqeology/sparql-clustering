@@ -4,7 +4,7 @@ async function* filterStreamByGroup(laStream) {
     // console.log('filterStreamByGroup()');
     for await (const record of laStream) {
         // console.log(record);
-        yield record.query;
+        yield record;
         // console.log('instance of group: ' + record.groupId);
         // process.stdout.write(record.groupId + laStream.next.groupId + '-');
         if (laStream.lookAhead === undefined || laStream.lookAhead.groupId !== record.groupId) {
