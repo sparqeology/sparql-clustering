@@ -163,7 +163,7 @@ export default class ParametricQueriesStorage {
                 }
             }
 
-            this.outputGraphConnection.post(queryTurtle);
+            await this.outputGraphConnection.post(queryTurtle);
             await this.storeForest(specializations, queryId);
         }
 
