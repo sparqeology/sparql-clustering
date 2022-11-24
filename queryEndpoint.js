@@ -22,8 +22,9 @@ function castRDFTerm(rdfTerm) {
         } else {
             return rdfTerm.value;
         }
+    } else {
+        return rdfTerm.value;
     }
-    return null;
 }
 
 export function buildStoreGraphUrl(graphStoreUrl, graphname) {
