@@ -58,7 +58,7 @@ export default async function aggregateAndSpecialize(queryStream, options = {}) 
 
     console.time('build specialization forest');
     var queryForest = [];
-    const nonClusterizedQueries = [];
+    const nonClusterizedQueryIds = [];
     queryCounter = 0;
     for (const [queryStr, queryData] of paramQueryMap) {
         if (queryCounter % 1000 === 0) {
@@ -70,7 +70,7 @@ export default async function aggregateAndSpecialize(queryStream, options = {}) 
                 queryData.instances.reduce((sum, instance) => sum + instance.numOfExecutions, 0) >= options.minNumOfExecutions)) {
             queryForest.push(buildSpecializationTree(queryData, options));
         } else if (options.includeSimpleQueries && queryData.instances.length == 1) {
-            nonClusterizedQueries.push(queryData);
+            nonClusterizedQueryIds.push(queryData.instances[0].id);
         }
         queryCounter++;
     }
@@ -91,6 +91,6 @@ export default async function aggregateAndSpecialize(queryStream, options = {}) 
     sortByNumOfExecutions(queryForest);
     console.timeEnd('sort queries');
 
-    return options.includeSimpleQueries ? {queryForest, nonClusterizedQueries} : queryForest;
+    return options.includeSimpleQueries ? {queryForest, nonClusterizedQueryIds} : queryForest;
 }
 

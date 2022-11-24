@@ -3,6 +3,7 @@ import fs from 'fs';
 import aggregateAndSpecialize from './aggregateAndSpecialize.js';
 import ParametricQueriesStorage from './storeForest.js';
 import dbpediaPrefixes from './dbpediaPrefixes.json' assert { type: "json" };
+import keggPrefixes from './keggPrefixes.json' assert { type: "json" };
 import queryEndpoint from './queryEndpoint.js';
 
 const queryText = fs.readFileSync('./queries.rq');
@@ -38,7 +39,7 @@ export default async function runAggregation(options) {
     console.time('storeResults');
     if (options.includeSimpleQueries) {
         await storage.storeForest(result.queryForest, null, actionId);
-        await storage.linkSingleQueries(result.nonClusterizedQueries, actionId);
+        await storage.linkSingleQueries(result.nonClusterizedQueryIds, actionId);
     } else {
         await storage.storeForest(result, null, actionId);
     }
@@ -76,9 +77,9 @@ async function test() {
         // countInstances: true,
         // minBindingDivergenceRatio: 0.05,
         asArray: true,
-        minNumOfInstances: 2,
+        minNumOfInstances: 10,
         defaultPreamble: {
-            prefixes: dbpediaPrefixes
+            prefixes: keggPrefixes
         },
         // showBindingDistributions: true
         inputEndpointURL: endpointURL, 
@@ -86,10 +87,7 @@ async function test() {
         // metadataGraphStoreURL: graphStoreURL, 
         metadataUpdateURL: updateURL,
         inputGraphnames, outputGraphname, metadataGraphname,
-        resourcesNs: 'http://sparql-clustering.org/',
-        defaultPreamble: {
-            prefixes: dbpediaPrefixes
-        }    
+        resourcesNs: 'http://sparql-clustering.org/'
     })
 }
 
