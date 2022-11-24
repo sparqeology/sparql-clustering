@@ -1,0 +1,6 @@
+PREFIX sd: <http://www.w3.org/ns/sparql-service-description#>
+
+SELECT ?dataset
+WHERE {
+    ?dataset a sd:NamedGraph.
+}
