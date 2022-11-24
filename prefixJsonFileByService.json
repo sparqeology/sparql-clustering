@@ -1,0 +1,7 @@
+{
+    "https://query.wikidata.org/": "./prefixes/wikidataPrefixes.json",
+    "https://dbpedia.org/sparql": "./prefixes/dbpediaPrefixes.json",
+    "http://sparql-clustering.org/services/bio2rdf.org": "./prefixes/bio2rdfPrefixes.json",
+    "http://data.semanticweb.org/sparql": "./prefixes/prefix.cc.json",
+    "https://linkedgeodata.org/sparql": "./prefixes/linkedgeodataPrefixes.json"
+}
