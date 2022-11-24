@@ -1,4 +1,3 @@
-import { Console } from 'console';
 import fs from 'fs';
 import httpCall from './httpCall.js';
 import queryEndpoint from './queryEndpoint.js';
