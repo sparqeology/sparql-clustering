@@ -1,0 +1,36 @@
+@prefix ds: <http://lsq.aksw.org/datasets/>.
+@prefix sd: <http://www.w3.org/ns/sparql-service-description#>.
+<http://lsq.aksw.org/datasets> {
+
+  ds: sd:namedGraph
+    ds:bench-dbpedia-20151025-lsq2,
+    ds:bench-dbpedia-20151124-lsq2,
+    ds:bench-dbpedia-20151126-lsq2,
+    ds:bench-dbpedia-20151213-lsq2,
+    ds:bench-dbpedia-20151230-lsq2,
+    ds:bench-dbpedia-20160117-lsq2,
+    ds:bench-dbpedia-20160212-lsq2,
+    ds:bench-dbpedia-20160222-lsq2,
+    ds:bench-dbpedia-20160301-lsq2,
+    ds:bench-dbpedia-20160303-lsq2,
+    ds:bench-dbpedia-20160304-lsq2,
+    ds:bench-dbpedia-20160314-lsq2,
+    ds:bench-dbpedia-20160411-lsq2,
+    ds:bench-dbpedia.3.5.1.log-lsq2.
+
+  ds:bench-dbpedia-20151025-lsq2 a sd:NamedGraph.
+  ds:bench-dbpedia-20151124-lsq2 a sd:NamedGraph.
+  ds:bench-dbpedia-20151126-lsq2 a sd:NamedGraph.
+  ds:bench-dbpedia-20151213-lsq2 a sd:NamedGraph.
+  ds:bench-dbpedia-20151230-lsq2 a sd:NamedGraph.
+  ds:bench-dbpedia-20160117-lsq2 a sd:NamedGraph.
+  ds:bench-dbpedia-20160212-lsq2 a sd:NamedGraph.
+  ds:bench-dbpedia-20160222-lsq2 a sd:NamedGraph.
+  ds:bench-dbpedia-20160301-lsq2 a sd:NamedGraph.
+  ds:bench-dbpedia-20160303-lsq2 a sd:NamedGraph.
+  ds:bench-dbpedia-20160304-lsq2 a sd:NamedGraph.
+  ds:bench-dbpedia-20160314-lsq2 a sd:NamedGraph.
+  ds:bench-dbpedia-20160411-lsq2 a sd:NamedGraph.
+  ds:bench-dbpedia.3.5.1.log-lsq2 a sd:NamedGraph.
+
+}

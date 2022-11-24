@@ -1,0 +1,60 @@
+@prefix ds: <http://lsq.aksw.org/datasets/>.
+@prefix sd: <http://www.w3.org/ns/sparql-service-description#>.
+<http://lsq.aksw.org/datasets> {
+
+  ds: sd:namedGraph
+    ds:bench-affymetrix-lsq2,
+    ds:bench-biomedels-lsq2,
+    ds:bench-bioportal-lsq2,
+    ds:bench-ctd-lsq2,
+    ds:bench-dbsnp-lsq2,
+    ds:bench-drugbank-lsq2,
+    ds:bench-genage-lsq2,
+    ds:bench-gendr-lsq2,
+    ds:bench-gene-lsq2,
+    ds:bench-goa-lsq2,
+    ds:bench-hgnc-lsq2,
+    ds:bench-homologene-lsq2,
+    ds:bench-irefindex-lsq2,
+    ds:bench-kegg-lsq2,
+    ds:bench-linkedGeoData-lsq2,
+    ds:bench-linkedspl-lsq2,
+    ds:bench-mgi-lsq2,
+    ds:bench-ncbigene-lsq2,
+    ds:bench-omim-lsq2,
+    ds:bench-pharmgkb-lsq2,
+    ds:bench-sabiork-lsq2,
+    ds:bench-sgd-lsq2,
+    ds:bench-sidr-lsq2,
+    ds:bench-swdf-lsq2,
+    ds:bench-taxonomy-lsq2,
+    ds:bench-wormbase-lsq2.
+
+  ds:bench-affymetrix-lsq2 a sd:NamedGraph.
+  ds:bench-biomedels-lsq2 a sd:NamedGraph.
+  ds:bench-bioportal-lsq2 a sd:NamedGraph.
+  ds:bench-ctd-lsq2 a sd:NamedGraph.
+  ds:bench-dbsnp-lsq2 a sd:NamedGraph.
+  ds:bench-drugbank-lsq2 a sd:NamedGraph.
+  ds:bench-genage-lsq2 a sd:NamedGraph.
+  ds:bench-gendr-lsq2 a sd:NamedGraph.
+  ds:bench-gene-lsq2 a sd:NamedGraph.
+  ds:bench-goa-lsq2 a sd:NamedGraph.
+  ds:bench-hgnc-lsq2 a sd:NamedGraph.
+  ds:bench-homologene-lsq2 a sd:NamedGraph.
+  ds:bench-irefindex-lsq2 a sd:NamedGraph.
+  ds:bench-kegg-lsq2 a sd:NamedGraph.
+  ds:bench-linkedGeoData-lsq2 a sd:NamedGraph.
+  ds:bench-linkedspl-lsq2 a sd:NamedGraph.
+  ds:bench-mgi-lsq2 a sd:NamedGraph.
+  ds:bench-ncbigene-lsq2 a sd:NamedGraph.
+  ds:bench-omim-lsq2 a sd:NamedGraph.
+  ds:bench-pharmgkb-lsq2 a sd:NamedGraph.
+  ds:bench-sabiork-lsq2 a sd:NamedGraph.
+  ds:bench-sgd-lsq2 a sd:NamedGraph.
+  ds:bench-sidr-lsq2 a sd:NamedGraph.
+  ds:bench-swdf-lsq2 a sd:NamedGraph.
+  ds:bench-taxonomy-lsq2 a sd:NamedGraph.
+  ds:bench-wormbase-lsq2 a sd:NamedGraph.
+
+}

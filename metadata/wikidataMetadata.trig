@@ -1,0 +1,22 @@
+@prefix ds: <http://lsq.aksw.org/datasets/>.
+@prefix sd: <http://www.w3.org/ns/sparql-service-description#>.
+<http://lsq.aksw.org/datasets> {
+
+  ds: sd:namedGraph
+    ds:bench-wikidata-interval1-organic-lsq2,
+    ds:bench-wikidata-interval2-organic-lsq2,
+    ds:bench-wikidata-interval3-organic-lsq2,
+    ds:bench-wikidata-interval4-organic-lsq2,
+    ds:bench-wikidata-interval5-organic-lsq2,
+    ds:bench-wikidata-interval6-organic-lsq2,
+    ds:bench-wikidata-interval7-organic-lsq2.
+
+  ds:bench-wikidata-interval1-organic-lsq2 a sd:NamedGraph.
+  ds:bench-wikidata-interval2-organic-lsq2 a sd:NamedGraph.
+  ds:bench-wikidata-interval3-organic-lsq2 a sd:NamedGraph.
+  ds:bench-wikidata-interval4-organic-lsq2 a sd:NamedGraph.
+  ds:bench-wikidata-interval5-organic-lsq2 a sd:NamedGraph.
+  ds:bench-wikidata-interval6-organic-lsq2 a sd:NamedGraph.
+  ds:bench-wikidata-interval7-organic-lsq2 a sd:NamedGraph.
+
+}
