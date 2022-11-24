@@ -30,6 +30,7 @@ export default class ParametricQueriesStorage {
         PREFIX prvTypes: <http://purl.org/net/provenance/types#>
         PREFIX wfprov: <http://purl.org/wf4ever/wfprov#>
         PREFIX sh: <http://www.w3.org/ns/shacl#>
+        PREFIX schema: <https://schema.org/>
 
         PREFIX lsqQueries: <http://lsq.aksw.org/lsqQuery->
         PREFIX actions: <${resourcesNs}actions/>
@@ -94,9 +95,7 @@ export default class ParametricQueriesStorage {
 
         if (overwriteOutputGraph) {
             await httpCall(this.outputUrl, {
-                method: 'PUT',
-                headers: {'Content-Type': 'text/turtle'},
-                body: ''
+                method: 'DELETE'
             });
         }
 
