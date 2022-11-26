@@ -9,7 +9,6 @@ INSERT {
 } 
 WHERE {
   GRAPH <http://lsq.aksw.org/datasets> {
-    ?query lsqv:endpoint ?endpoint.
     ?endpoint dcterms:isPartOf* ?service.
   }
 }
