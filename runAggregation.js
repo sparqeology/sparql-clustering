@@ -34,17 +34,21 @@ export default async function runAggregation(options) {
     console.time('main');
     const storage = new ParametricQueriesStorage(options)
     const actionId = await storage.recordProcessStart();
-    const queries = queryEndpoint(options.inputEndpointURL, options.inputGraphnames, queryText);
-    const result = await aggregateAndSpecialize(queries, options);
-    console.time('storeResults');
-    if (options.includeSimpleQueries) {
-        await storage.storeForest(result.queryForest, null, actionId);
-        await storage.linkSingleQueries(result.nonClusterizedQueryIds, actionId);
-    } else {
-        await storage.storeForest(result, null, actionId);
+    try {
+        const queries = queryEndpoint(options.inputEndpointURL, options.inputGraphnames, queryText);
+        const result = await aggregateAndSpecialize(queries, options);
+        console.time('storeResults');
+        if (options.includeSimpleQueries) {
+            await storage.storeForest(result.queryForest, null, actionId);
+            await storage.linkSingleQueries(result.nonClusterizedQueryIds, actionId);
+        } else {
+            await storage.storeForest(result, null, actionId);
+        }
+        await storage.recordProcessCompletion(actionId);
+        console.timeEnd('storeResults');
+    } catch(error) {
+        await storage.recordProcessFailure(actionId, error);
     }
-    await storage.recordProcessCompletion(actionId);
-    console.timeEnd('storeResults');
     console.timeEnd('main');
 }
 

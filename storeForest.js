@@ -5,6 +5,7 @@ import { mergePreambles } from './queryHandling.js';
 import SparqlGraphConnection from './sparqlGraphConnection.js';
 import httpCall from './httpCall.js';
 import { buildStoreGraphUrl } from './queryEndpoint.js';
+const JSON_DATATYPE_URI = 'https://www.iana.org/assignments/media-types/application/json';
 
 function md5(str) {
     return crypto.createHash('md5').update(str).digest("hex")
@@ -45,6 +46,7 @@ export default class ParametricQueriesStorage {
         PREFIX schema: <https://schema.org/>
         PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
         PREFIX sd: <http://www.w3.org/ns/sparql-service-description#>
+        PREFIX spaclus: <http://sparql-clustering/vocab/>
         
         PREFIX actions: <${resourcesNs}actions/>
         PREFIX graphs: <${resourcesNs}graphs/>
@@ -68,9 +70,10 @@ export default class ParametricQueriesStorage {
         const metadataSetup = this.metadataPreamble + `
         INSERT DATA {
             ${metadataGraphname ? `GRAPH <${metadataGraphname}> {` : ''}
-                actions:${actionId} a schema:Action;
+                actions:${actionId} a schema:Action, spaclus:SparqlClustering;
                     schema:startTime '${new Date().toISOString()}'^^xsd:dateTime;
-                    schema:actionStatus schema:ActiveActionStatus.
+                    schema:actionStatus schema:ActiveActionStatus;
+                    spaclus:parameters ${escapeLiteral(JSON.stringify(this.options))}^^<${JSON_DATATYPE_URI}>.
             
                 services:${inputGraphStoreId} a sd:Service;
                     sd:endpoint <${inputEndpointURL}>;
@@ -214,6 +217,37 @@ export default class ParametricQueriesStorage {
         
                 datasets:${outputGraphStoreId} a sd:Dataset;
                     ${outputGraphname ? 'sd:namedGraph' : 'sd:defaultGraph'} graphs:${outputGraphId}.
+            ${metadataGraphname ? '}' : ''}
+        };`
+
+        await httpCall(metadataUpdateURL, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/sparql-update'},
+            body: metadataUpdate
+        });
+    }
+    
+    async recordProcessFailure(actionId, error) {
+        const {
+            metadataUpdateURL, metadataGraphname = null
+        } = this.options
+    
+        try {
+            await this.outputGraphConnection.sync();
+        } catch(e) {}
+
+        const metadataUpdate = this.metadataPreamble + `
+        DELETE DATA {
+            ${metadataGraphname ? `GRAPH <${metadataGraphname}> {` : ''}
+                actions:${actionId} schema:actionStatus schema:ActiveActionStatus
+            ${metadataGraphname ? '}' : ''}
+        };
+        
+        INSERT DATA {
+            ${metadataGraphname ? `GRAPH <${metadataGraphname}> {` : ''}
+                actions:${actionId} schema:actionStatus schema:FailedActionStatus;
+                    schema:endTime '${new Date().toISOString()}'^^xsd:dateTime;
+                    schema:error ${escapeLiteral('' + error)}.
             ${metadataGraphname ? '}' : ''}
         };`
 
