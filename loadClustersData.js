@@ -5,6 +5,9 @@ import { parse } from 'csv-parse';
 import splitStreamByGroups from './splitStreamByGroups.js';
 import SparqlGraphConnection from './sparqlGraphConnection.js';
 import { buildStoreGraphUrl } from './queryEndpoint.js';
+import { escapeLiteral } from './turtleEncoding.js';
+
+const PREFIX_LENGTH = 'http://lsq.aksw.org/lsqQuery-'.length;
 
 async function* map(inputGenerator, fn) {
     for await (const data of inputGenerator) {
@@ -14,11 +17,17 @@ async function* map(inputGenerator, fn) {
 
 async function loadClustersData(globalStream, sourceIRI, options) {
     const clusterStream = splitStreamByGroups(globalStream);
-    const outputGraphConnection = new SparqlGraphConnection(
+    const clusterGraphConnection = new SparqlGraphConnection(
         buildStoreGraphUrl(options.outputGraphStoreURL, options.outputGraphname), {
         preamble: `
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
         PREFIX dcterms: <http://purl.org/dc/terms/>
+        `
+    });
+    const datasetGraphConnection = new SparqlGraphConnection(
+        buildStoreGraphUrl(options.outputGraphStoreURL, sourceIRI), {
+        preamble: `
+        PREFIX lsqv: <http://lsq.aksw.org/vocab#>
         `
     });
     for await (const cluster of clusterStream) {
@@ -32,7 +41,7 @@ async function loadClustersData(globalStream, sourceIRI, options) {
         console.log('Loading group ' + cluster.groupId + '...');
         // console.log('****************************************');
 
-        outputGraphConnection.post(`
+        clusterGraphConnection.post(`
         <${sourceIRI}/clusters/${cluster.groupId}>
             dcterms:isPartOf <${sourceIRI}>;
             dcterms:identifier ${cluster.groupId}.
@@ -48,13 +57,19 @@ async function loadClustersData(globalStream, sourceIRI, options) {
                 process.stdout.write(queryCounter / 1000 + ' K\r');
             }
             queryCounter++;
-            await outputGraphConnection.post(`
+            await clusterGraphConnection.post(`
             <${sourceIRI}/clusters/${cluster.groupId}> rdfs:member <${query.queryURI}>.
+            `);
+            await datasetGraphConnection.post(`
+            <${query.queryURI}>
+                a lsqv:Query;
+                lsqv:hash ${escapeLiteral(query.queryURI.substr(PREFIX_LENGTH))};
+                lsqv:text ${escapeLiteral(query.query)}.
             `);
         }
         console.log('\nDone!');
     }
-    await outputGraphConnection.sync();
+    await clusterGraphConnection.sync();
 }
 
 async function loadClustersDataFromFile(filename, sourceIRI, options) {
