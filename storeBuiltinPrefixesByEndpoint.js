@@ -7,13 +7,6 @@ const JSON_DATATYPE_URI = 'https://www.iana.org/assignments/media-types/applicat
 
 async function storeBuiltinPrefixes(updateEndpointUrl, serviceUri, jsonFilePath) {
     const prefixesJson = await fs.promises.readFile(jsonFilePath);
-    // console.log({
-    //     method: 'POST',
-    //     headers: {'Content-Type': 'application/sparql-update'},
-    //     body: STORE_SERVICE_PREFIXES
-    //         .replaceAll('?service', `<${serviceUri}>`)
-    //         .replaceAll('?prefixes', `"${prefixesJson}"^^<${JSON_DATATYPE_URI}>`)
-    // });
     console.log(`Storing prefixes for service ${serviceUri}...`);
     await httpCall(updateEndpointUrl, {
         method: 'POST',
