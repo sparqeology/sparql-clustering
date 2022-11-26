@@ -79,14 +79,16 @@ export default class ParametricQueriesStorage {
                     sd:endpoint <${inputEndpointURL}>;
                     sd:defaultDataset datasets:${inputGraphStoreId}.
 
-                ${(inputGraphnames || [null]).map(inputGraphname => {
-                    const inputGraphId = encodeURIComponent(inputEndpointURL) + (inputGraphname ? '_' + encodeURIComponent(inputGraphname) : '')
-                    return `
-                    actions:${actionId} schema:object graphs:${inputGraphId}.
-                    graphs:${inputGraphId} a ${inputGraphname ? `sd:NamedGraph; sd:name <${inputGraphname}>` : 'sd:Graph'}.
-                    datasets:${inputGraphStoreId} a sd:Dataset;
-                        ${inputGraphname ? 'sd:namedGraph' : 'sd:defaultGraph'} graphs:${inputGraphId}.`;
-                }).join('')}
+                ${this.options.cluster ?
+                    `actions:${actionId} schema:object ${this.options.cluster}` :
+                    (inputGraphnames || [null]).map(inputGraphname => {
+                        const inputGraphId = encodeURIComponent(inputEndpointURL) + (inputGraphname ? '_' + encodeURIComponent(inputGraphname) : '')
+                        return `
+                        actions:${actionId} schema:object graphs:${inputGraphId}.
+                        graphs:${inputGraphId} a ${inputGraphname ? `sd:NamedGraph; sd:name <${inputGraphname}>` : 'sd:Graph'}.
+                        datasets:${inputGraphStoreId} a sd:Dataset;
+                            ${inputGraphname ? 'sd:namedGraph' : 'sd:defaultGraph'} graphs:${inputGraphId}.`;
+                    }).join('')}
             ${metadataGraphname ? '}' : ''}
         };`
 

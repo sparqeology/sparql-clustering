@@ -1,0 +1,9 @@
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX lsqv: <http://lsq.aksw.org/vocab#>
+
+SELECT DISTINCT ?id ?text
+WHERE {
+    ?cluster rdfs:member ?query.
+    ?query lsqv:hash ?id;
+          lsqv:text ?text.
+}

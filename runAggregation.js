@@ -6,13 +6,15 @@ import dbpediaPrefixes from './dbpediaPrefixes.json' assert { type: "json" };
 import keggPrefixes from './keggPrefixes.json' assert { type: "json" };
 import queryEndpoint from './queryEndpoint.js';
 
-const queryText = fs.readFileSync('./queries.rq');
+const queriesQuery = fs.readFileSync('./queries.rq');
+const queriesOfClusterQuery = '' + fs.readFileSync('./queriesOfCluster.rq');
 
 /**
  * Run the aggregation process
  * @param  {object} options Options to configure the process
  * @param  {string} options.inputEndpointURL URL of the endpoint from which source data is read
  * @param  {string[]} options.inputGraphnames Optionally, array of IRIs corresponding to the graph names from which the data source is read (if undefined or empty, the default graph is used)
+ * @param  {object} options.cluster Optionally, IRI of a cluster the queries considered need to belong to
  * @param  {string} options.outputGraphStoreURL URL of the graph store to which the output is written
  * @param  {string} options.outputGraphname Optionally, IRI corresponding to the graph name to which the output is written (if undefined, the default graph is used)
  * @param  {boolean} options.overwriteOutputGraph If true, the target graph for the result is overwritten. Otherwise, the results are added to the current content of the graph.
@@ -35,7 +37,9 @@ export default async function runAggregation(options) {
     const storage = new ParametricQueriesStorage(options)
     const actionId = await storage.recordProcessStart();
     try {
-        const queries = queryEndpoint(options.inputEndpointURL, options.inputGraphnames, queryText);
+        const queries = queryEndpoint(
+            options.inputEndpointURL, options.inputGraphnames,
+            options.cluster ? queriesOfClusterQuery.replaceAll('?cluster', `<${options.cluster}>`) : queriesQuery);
         const result = await aggregateAndSpecialize(queries, options);
         console.time('storeResults');
         if (options.includeSimpleQueries) {
