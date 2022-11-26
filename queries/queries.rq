@@ -22,12 +22,12 @@ PREFIX lsqv: <http://lsq.aksw.org/vocab#>
 # lsqv:hostHash
 # lsqv:uri
 
-SELECT ?id ?text (COUNT(?exec) AS ?numOfExecutions) (COUNT(DISTINCT ?host) AS ?numOfHosts)
+SELECT DISTINCT ?id ?text #(COUNT(?exec) AS ?numOfExecutions) (COUNT(DISTINCT ?host) AS ?numOfHosts)
 WHERE {
     ?query lsqv:hash ?id;
-          lsqv:text ?text;
-          lsqv:hasRemoteExec ?exec.
-    ?exec lsqv:hostHash ?host.
+          lsqv:text ?text.
+#          lsqv:hasRemoteExec ?exec.
+#    ?exec lsqv:hostHash ?host.
 }
-GROUP BY ?id ?text
+#GROUP BY ?id ?text
 #LIMIT 25
