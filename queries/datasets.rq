@@ -1,0 +1,12 @@
+PREFIX sd: <http://www.w3.org/ns/sparql-service-description#>
+PREFIX lsqv: <http://lsq.aksw.org/vocab#>
+PREFIX sh: <http://www.w3.org/ns/shacl#>
+
+SELECT *
+WHERE {
+    ?dataset a sd:NamedGraph.
+    OPTIONAL {
+        ?dataset lsqv:endpoint/sh:declare ?prefixesJson
+    }
+}
+

@@ -1,0 +1,9 @@
+PREFIX dcterms: <http://purl.org/dc/terms/>
+
+SELECT ?cluster ?id
+WHERE {
+    ?cluster
+        dcterms:isPartOf ?dataset;
+        dcterms:identifier ?id.
+}
+ORDER BY ?id
