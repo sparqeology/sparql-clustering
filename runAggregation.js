@@ -72,11 +72,11 @@ export default async function runAggregation(options) {
                 //     cluster,
                 //     inputGraphnames: [...inputGraphnames, clustersGraphname]
                 // });
-                // await runAggregation({
-                //     ...otherOptions,
-                //     cluster,
-                //     inputGraphnames: [...inputGraphnames, clustersGraphname]
-                // });
+                await runAggregation({
+                    ...otherOptions,
+                    cluster,
+                    inputGraphnames: [...inputGraphnames, clustersGraphname]
+                });
             }
         }
     } else {
