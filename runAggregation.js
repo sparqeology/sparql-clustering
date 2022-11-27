@@ -59,24 +59,22 @@ export default async function runAggregation(options) {
              });
         }
     } else if (options.clustersGraphname) {
-        const {clustersGraphname, inputGraphnames, ...otherOptions} = options;
-        const arrayOfClusterGenerators = inputGraphnames.map(inputGraphname => queryEndpoint(
-            options.inputEndpointURL, [clustersGraphname],
-            clustersQuery.replaceAll('?dataset', `<${inputGraphname}>`)
-        ));
-        for (const clusters of arrayOfClusterGenerators) {
+        const {clustersGraphname, inputGraphnames, overwriteOutputGraph, ...otherOptions} = options;
+        for (const inputGraphname of inputGraphnames) {
+            const clusters = queryEndpoint(
+                options.inputEndpointURL, [clustersGraphname],
+                clustersQuery.replaceAll('?dataset', `<${inputGraphname}>`)
+            );
+            let first = true;
             for await (const {cluster} of clusters) {
                 console.log('Cluster: ' + cluster);
-                // console.log({
-                //     ...otherOptions,
-                //     cluster,
-                //     inputGraphnames: [...inputGraphnames, clustersGraphname]
-                // });
                 await runAggregation({
                     ...otherOptions,
                     cluster,
-                    inputGraphnames: [...inputGraphnames, clustersGraphname]
+                    inputGraphnames: [...inputGraphnames, clustersGraphname],
+                    overwriteOutputGraph: first && overwriteOutputGraph
                 });
+                first = false;
             }
         }
     } else {
@@ -133,7 +131,7 @@ async function test() {
         // countInstances: true,
         // minBindingDivergenceRatio: 0.05,
         asArray: true,
-        minNumOfInstances: 10,
+        minNumOfInstances: 4,
         // defaultPreamble: {
         //     prefixes: dbpediaPrefixes
         // },
