@@ -80,7 +80,7 @@ export default class ParametricQueriesStorage {
                     sd:defaultDataset datasets:${inputGraphStoreId}.
 
                 ${this.options.cluster ?
-                    `actions:${actionId} schema:object ${this.options.cluster}` :
+                    `actions:${actionId} schema:object <${this.options.cluster}>` :
                     (inputGraphnames || [null]).map(inputGraphname => {
                         const inputGraphId = encodeURIComponent(inputEndpointURL) + (inputGraphname ? '_' + encodeURIComponent(inputGraphname) : '')
                         return `
@@ -99,9 +99,13 @@ export default class ParametricQueriesStorage {
         });
 
         if (overwriteOutputGraph) {
-            await httpCall(this.outputUrl, {
-                method: 'DELETE'
-            });
+            try {
+                await httpCall(this.outputUrl, {
+                    method: 'DELETE'
+                });
+            } catch(e) {
+                // do nothing if error is given because the graph does not exist
+            }
         }
 
         this.outputGraphConnection = new SparqlGraphConnection(this.outputUrl, {
