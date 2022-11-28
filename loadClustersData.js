@@ -57,22 +57,25 @@ async function loadClustersData(globalStream, sourceIRI, options) {
                 process.stdout.write(queryCounter / 1000 + ' K\r');
             }
             queryCounter++;
-            await clusterGraphConnection.post(`
-            <${sourceIRI}/clusters/${cluster.groupId}> rdfs:member <${query.queryURI}>.
-            `);
-            await datasetGraphConnection.post(`
-            <${query.queryURI}>
-                a lsqv:Query;
-                lsqv:hash ${escapeLiteral(query.queryURI.substr(PREFIX_LENGTH))};
-                lsqv:text ${escapeLiteral(query.query)}.
-            `);
+            await Promise.all([
+                await clusterGraphConnection.post(`
+                <${sourceIRI}/clusters/${cluster.groupId}> rdfs:member <${query.queryURI}>.
+                `),
+                await datasetGraphConnection.post(`
+                <${query.queryURI}>
+                    a lsqv:Query;
+                    lsqv:hash ${escapeLiteral(query.queryURI.substr(PREFIX_LENGTH))};
+                    lsqv:text ${escapeLiteral(query.query)}.
+                `)
+            ]);
         }
         console.log('\nDone!');
     }
-    await clusterGraphConnection.sync();
+    await Promise.all([clusterGraphConnection.sync(), datasetGraphConnection.sync()]);
 }
 
 async function loadClustersDataFromFile(filename, sourceIRI, options) {
+    console.log('Dataset: ' + sourceIRI);
     const queriesInputStream = fs.createReadStream(filename);
     const parser = parse({
         delimiter: ',',
@@ -96,8 +99,6 @@ async function loadClustersDataFromDirectory(options) {
                     filename;
             const clustersDataFilename = options.dirpath + filename + (options.filepathSuffix || '');
             const datasetURI = options.datasetsNs + datasetName;
-            // console.log(datasetURI);
-            console.log(clustersDataFilename);
             await loadClustersDataFromFile(clustersDataFilename, datasetURI, options);
         }
     }
@@ -115,10 +116,12 @@ async function main() {
     // );
     await loadClustersDataFromDirectory({
         dirpath: '/Users/miguel/Downloads/LSQExtractedQueries_features_wu/',
+        // dirpath: '/Users/miguel/Downloads/clustest/',
         test: /bench-.*/,
         dirpathSuffix: '.nt.bz2',
         filepathSuffix: '/clusters.csv',
         outputGraphStoreURL: 'http://localhost:3030/lsq2/data',
+        // outputGraphStoreURL: 'http://localhost:3030/lsqDev/data',
         outputGraphname: 'http://lsq.aksw.org/clustering/v1',
         datasetsNs: 'http://lsq.aksw.org/datasets/'
     });
