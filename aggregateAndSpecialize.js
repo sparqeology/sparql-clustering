@@ -87,9 +87,11 @@ export default async function aggregateAndSpecialize(queryStream, options = {}) 
     queryForest = queryForest.map(textualForm);
     console.timeEnd('queries as text');
 
-    console.time('sort queries');
-    sortByNumOfExecutions(queryForest);
-    console.timeEnd('sort queries');
+    if (options.sortResults) {
+        console.time('sort queries');
+        sortByNumOfExecutions(queryForest);
+        console.timeEnd('sort queries');
+    }
 
     return options.includeSimpleQueries ? {queryForest, nonClusterizedQueryIds} : queryForest;
 }
