@@ -25,7 +25,7 @@ PREFIX lsqv: <http://lsq.aksw.org/vocab#>
 SELECT DISTINCT ?id ?text #(COUNT(?exec) AS ?numOfExecutions) (COUNT(DISTINCT ?host) AS ?numOfHosts)
 WHERE {
     ?query lsqv:hash ?id;
-          lsqv:text ?text.
+        lsqv:text ?text.
 #          lsqv:hasRemoteExec ?exec.
 #    ?exec lsqv:hostHash ?host.
 }

@@ -138,7 +138,6 @@ async function test() {
         // showBindingDistributions: true
         inputEndpointURL: endpointURL, 
         outputGraphStoreURL: graphStoreURL, 
-        // metadataGraphStoreURL: graphStoreURL, 
         metadataUpdateURL: updateURL,
         // inputGraphnames, outputGraphname,
         metadataGraphname,
