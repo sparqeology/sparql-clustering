@@ -128,8 +128,9 @@ export function pairParameters({queryPieces, parameterByPosition, preamble}, par
 }
 
 export function simplifyQueryBasic(parametricQuery, fromParameter = 0) {
+    // console.log('Start of simplifyQueryBasic()');
+    // console.log('fromParameter: ' + fromParameter);
     const firstInstancebindings = parametricQuery.instances[0].bindings;
-    // console.log(fromParameter);
     if (fromParameter >= firstInstancebindings.length) {
         return parametricQuery;
     }
@@ -138,19 +139,21 @@ export function simplifyQueryBasic(parametricQuery, fromParameter = 0) {
     while ((pairedParameter = firstInstancebindings.indexOf(firstValue, pairedParameter + 1)) !== -1) {
         // console.log('checking if parameter ' + pairedParameter + ' is paired...');
         if (parametricQuery.instances.every(({bindings}) => bindings[pairedParameter] === bindings[fromParameter])) {
-            // console.log('yes it is!');
+            // console.log('yes, it is!');
             return simplifyQueryBasic(
                 selectByPairedParameters(parametricQuery, fromParameter, pairedParameter, true),
                 fromParameter);
         }
+        // console.log('no, it\'s not!');
     }
     // console.log('checking if value ' + firstValue + ' is fixed...');
     if (parametricQuery.instances.every(({bindings}) => bindings[fromParameter] === firstValue)) {
-        // console.log('yes it is!');
+        // console.log('yes, it is!');
         return simplifyQueryBasic(
             selectByParameterValue(parametricQuery, fromParameter, firstValue, true),
             fromParameter);
     }
+    // console.log('no, it\'s not!');
     return simplifyQueryBasic(parametricQuery, fromParameter + 1);
 }
 
@@ -185,7 +188,10 @@ function totNumOfExecutions(instances) {
 }
 
 export function generateSpecializations(parametricQuery, fromParameter, options = {}) {
+    // console.log('Start of generateSpecializations()');
+    // console.log('fromParameter: ' + fromParameter);
     if (fromParameter >= parametricQuery.instances[0].bindings.length) {
+        // console.log('End of generateSpecializations()');
         return [];
     }
 
@@ -204,14 +210,22 @@ export function generateSpecializations(parametricQuery, fromParameter, options 
         }
         instance.bindings.forEach((otherValue, parameter) => {
             if (parameter > fromParameter && otherValue === value) {
+                // if (!(otherValue in instancesByRepeatedParam)) {
+                //     instancesByRepeatedParam[otherValue] = [instance];
+                // } else {
+                //     instancesByRepeatedParam[otherValue].push(instance);
+                // }
                 if (!(otherValue in instancesByRepeatedParam)) {
-                    instancesByRepeatedParam[otherValue] = [instance];
+                    instancesByRepeatedParam[parameter] = [instance];
                 } else {
-                    instancesByRepeatedParam[otherValue].push(instance);
+                    instancesByRepeatedParam[parameter].push(instance);
                 }
             }
         });
     });
+
+    // console.log(JSON.stringify(instancesByValue, null, 4));
+    // console.log(JSON.stringify(instancesByRepeatedParam, null, 4));
 
     var valuesAndInstancesForSpecializations = Object.entries(instancesByValue);
     if (minNumOfInstances > 1) {
@@ -223,7 +237,11 @@ export function generateSpecializations(parametricQuery, fromParameter, options 
                 ([value, instances]) => totNumOfExecutions(instances) >= minNumOfExecutions);
     }
     const fixedValueSpecializations = valuesAndInstancesForSpecializations.map(([value, instances]) =>
-            simplifyAndGenerateSpecializations(selectByParameterValue(parametricQuery, fromParameter, value, true), fromParameter, options));
+            simplifyAndGenerateSpecializations(
+                selectByParameterValue({
+                    ...parametricQuery,
+                    instances
+                }, fromParameter, value, true), fromParameter, options));
 
     var paramAndInstancesForSpecializations = Object.entries(instancesByRepeatedParam);
     if (minNumOfInstances > 1) {
@@ -235,10 +253,15 @@ export function generateSpecializations(parametricQuery, fromParameter, options 
                 ([value, instances]) => totNumOfExecutions(instances) >= minNumOfExecutions);
     }
     const repeatedValueSpecializations = paramAndInstancesForSpecializations.map(([pairedParameter, instances]) =>
-            simplifyAndGenerateSpecializations(selectByPairedParameters(parametricQuery, fromParameter, pairedParameter, true), fromParameter + 1, options));   
+            simplifyAndGenerateSpecializations(
+                selectByPairedParameters({
+                    ...parametricQuery,
+                    instances
+                }, fromParameter, pairedParameter, true), fromParameter + 1, options));   
 
     const furtherSpecializations = generateSpecializations(parametricQuery, fromParameter + 1, options);
             
+    // console.log('End of generateSpecializations()');
     return uniqueQueries([
         ...fixedValueSpecializations,
         ...repeatedValueSpecializations,
@@ -248,6 +271,9 @@ export function generateSpecializations(parametricQuery, fromParameter, options 
 }
 
 export function simplifyAndGenerateSpecializations(parametricQuery, fromParameter, options = {}) {
+    // console.log('Start of simplifyAndGenerateSpecializations()');
+    // console.log(parametricQuery);
+    // console.log('fromParameter: ' + fromParameter);
     const simplifiedQuery = simplifyQueryBasic(parametricQuery);
     if (fromParameter >= parametricQuery.instances[0].bindings.length) {
         return {
@@ -280,8 +306,10 @@ function pruneRedundantQueries({specializations, ...queryData}) {
 }
 
 export function buildSpecializationTree(queryClass, options = {}) {
+    // console.log('Start of buildSpecializationTree()');
     const {allSpecializations, ...specializationTree} = 
         pruneRedundantQueries(simplifyAndGenerateSpecializations(queryClass, 0, options));
+    // console.log('End of buildSpecializationTree()');
     return specializationTree;
 }
 
