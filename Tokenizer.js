@@ -78,6 +78,10 @@ export default class Tokenizer {
                 const nextSymbol = this.lexer.lex();
                 if (nextSymbol === this.DATATYPE_SYMBOL) {
                     this.lexer.lex();
+                    return {
+                        match: str + '^^' + this.lexer.match,
+                        parameterizable: true
+                    }
                 }
                 return {
                     match: str + this.lexer.match,

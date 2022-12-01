@@ -325,18 +325,19 @@ export function mergePreambles(preamble1, preamble2) {
 
 // const inputStr = `
 // PREFIX foaf: <http://xmlns.com/foaf/0.1/> 
+// PREFIX xsd: <http://www.w3.org/2001/XMLSchema#/> 
 
 // SELECT * {
-//     ?mickey foaf:name "Mickey Mouse"@en
+//     ?mickey foaf:name "Pippo"@en, "23"^^<http://www.w3.org/2001/XMLSchema#int>, 42, "12"^^xsd:int
+
 // #        foaf:knows ?other.
 // }
-
-
 // `;
 
 // const {generalizedQuery, constants} = createGeneralizedQuery(inputStr, {sparqlParameters: true});
 
-// // console.log(generalizedQuery);
+// console.log(generalizedQuery);
+// console.log(constants);
 
 
 // // console.log(toString(generalizedQuery));
