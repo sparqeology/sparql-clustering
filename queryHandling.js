@@ -40,7 +40,7 @@ export function createGeneralizedQuery(queryStr, options = {}) {
     };
 }
 
-function generateParameterLabel(parameterIndex) {
+export function generateParameterLabel(parameterIndex) {
     return '$__PARAM_' + parameterIndex;
 }
 

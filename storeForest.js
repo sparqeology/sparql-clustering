@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import {v4 as uuidv4} from 'uuid';
 import { rebaseTerm, escapeLiteral } from './turtleEncoding.js';
-import { mergePreambles } from './queryHandling.js';
+import { generateParameterLabel, mergePreambles } from './queryHandling.js';
 import SparqlGraphConnection from './SparqlGraphConnection.js';
 import httpCall from './httpCall.js';
 import { buildStoreGraphUrl } from './queryEndpoint.js';
@@ -145,7 +145,7 @@ export default class ParametricQueriesStorage {
 
             const queryId = ++this.queryCount;
 
-            var queryTurtle = (
+            await this.outputGraphConnection.post((
                 parentQueryId ?
                     `templates:${queryId} prov:specializationOf  templates:${parentQueryId}.` :
                     // `templates:${queryId} prov:wasGeneratedBy actions:${actionId}.`) + `
@@ -158,23 +158,23 @@ export default class ParametricQueriesStorage {
                 templates:${queryId}
                     a prvTypes:QueryTemplate, sh:Parametrizable;
                     lsqv:text ${escapeLiteral(text)}.
-            `;
+            `);
 
             for (const paramIndex of instances[0].bindings.map(({}, paramIndex) => paramIndex)) {
-                const paramName = '';
-                queryTurtle += `
+                const paramName = generateParameterLabel(paramIndex).slice(1);
+                await this.outputGraphConnection.post(`
                     templates:${queryId} sh:parameter params:${queryId}_${paramIndex}.
 
                     params:${queryId}_${paramIndex}
                         a sh:Parameter;
                         sh:path paramPaths:${paramName};
                         sh:description "${paramName}".
-                `;
+                `);
             }
 
             for (const {id: lsqIdUnesc, bindings} of instances) {
                 const lsqId = escapeLsqId(lsqIdUnesc)
-                queryTurtle += `
+                await this.outputGraphConnection.post(`
                     queryGenerations:${queryId}_${lsqId}
                         a  prvTypes:DataCreation;
                         prv:usedGuideline templates:${queryId}.
@@ -182,25 +182,24 @@ export default class ParametricQueriesStorage {
                     <${LSQ_QUERIES_PREFIX}${lsqIdUnesc}>
                         a prvTypes:SPARQLQuery;
                         prv:createdBy queryGenerations:${queryId}_${lsqId}.
-                `;
+                `);
 
                 for (const [paramIndex, bindingValue] of bindings.entries()) {
                     let rdfValue;
                     try {
                         rdfValue = rebaseTerm(bindingValue, mergePreambles(this.options.defaultPreamble, preamble));
                     } catch(exception) {}
-                    queryTurtle += `
+                    await this.outputGraphConnection.post(`
                         queryGenerations:${queryId}_${lsqId} prv:usedData bindings:${lsqId}_${paramIndex}.
                         bindings:${lsqId}_${paramIndex}
                             a wfprov:Artifact;
                             wfprov:describedByParameter params:${queryId}_${paramIndex};
                             ${rdfValue ? `rdf:value ${rdfValue};` : ''}
                             lsqv:text ${escapeLiteral(bindingValue)}. 
-                    `; // wfprov:usedInput
+                    `); // wfprov:usedInput
                 }
             }
 
-            await this.outputGraphConnection.post(queryTurtle);
             await this.storeForest(specializations, queryId);
         }
 
