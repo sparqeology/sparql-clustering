@@ -8,5 +8,6 @@ WHERE {
     OPTIONAL {
         ?dataset lsqv:endpoint/sh:declare ?prefixesJson
     }
+    BIND (SUBSTR(STR(?dataset), STRLEN(STR(<http://lsq.aksw.org/datasets/>)) + 1) AS ?datasetId).
 }
 
