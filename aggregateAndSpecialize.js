@@ -32,7 +32,7 @@ export default async function aggregateAndSpecialize(queryStream, options = {}) 
     var queryCounter = 0;
     for await (const {text: queryText, ...queryData} of queryStream) {
         if (queryCounter % 1000 === 0) {
-            process.stdout.write(('' + queryCounter / 1000).padStart(8, ' ') + ' K\r');
+            process.stdout.write(('  ' + queryCounter / 1000).padStart(8, ' ') + ' K\r');
         }
         const {generalizedQuery, constants, preamble} = createGeneralizedQuery(queryText, options);
         const queryStr = toString(generalizedQuery);
@@ -62,7 +62,7 @@ export default async function aggregateAndSpecialize(queryStream, options = {}) 
     queryCounter = 0;
     for (const [queryStr, queryData] of paramQueryMap) {
         if (queryCounter % 1000 === 0) {
-            process.stdout.write(('' + queryCounter / 1000).padStart(8, ' ') + ' K\r');
+            process.stdout.write(('  ' + queryCounter / 1000).padStart(8, ' ') + ' K\r');
         }
         if ((!options.minNumOfInstances ||
                 queryData.instances.length >= options.minNumOfInstances)
