@@ -30,6 +30,16 @@ export default class SparqlGraphConnection {
         }
     }
 
+    async delete() {
+        try {
+            await httpCall(this.url, {
+                method: 'DELETE'
+            });
+        } catch(e) {
+            // do nothing if error is given because the graph does not exist
+        }
+    }
+
     async post(turtleStr) {
         this._checkError();
         const newDataBuffer = Buffer.from(turtleStr);

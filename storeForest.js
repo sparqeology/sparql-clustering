@@ -2,9 +2,10 @@ import crypto from 'crypto';
 import {v4 as uuidv4} from 'uuid';
 import { rebaseTerm, escapeLiteral } from './turtleEncoding.js';
 import { mergePreambles } from './queryHandling.js';
-import SparqlGraphConnection from './sparqlGraphConnection.js';
+import SparqlGraphConnection from './SparqlGraphConnection.js';
 import httpCall from './httpCall.js';
 import { buildStoreGraphUrl } from './queryEndpoint.js';
+import RdfFileConnection from './RdfFileConnection.js';
 const JSON_DATATYPE_URI = 'https://www.iana.org/assignments/media-types/application/json';
 
 function md5(str) {
@@ -22,9 +23,10 @@ export default class ParametricQueriesStorage {
 
     constructor(options) {
         this.options = options;
-        const {resourcesNs, outputGraphStoreURL, outputGraphname = null} = this.options;
+        const {resourcesNs, outputGraphStoreURL, outputDirPath, outputGraphnameId, outputGraphname} = this.options;
         this.preamble = `
         PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
         PREFIX lsqv: <http://lsq.aksw.org/vocab#>
         PREFIX prov: <http://www.w3.org/ns/prov#>
         PREFIX prv: <http://purl.org/net/provenance/ns#>
@@ -32,6 +34,9 @@ export default class ParametricQueriesStorage {
         PREFIX wfprov: <http://purl.org/wf4ever/wfprov#>
         PREFIX sh: <http://www.w3.org/ns/shacl#>
         PREFIX schema: <https://schema.org/>
+        PREFIX spaclus: <http://sparql-clustering/vocab/>
+        PREFIX dcterms: <http://purl.org/dc/terms/>
+        PREFIX void: <http://rdfs.org/ns/void#>
 
         PREFIX lsqQueries: <http://lsq.aksw.org/lsqQuery->
         PREFIX actions: <${resourcesNs}actions/>
@@ -54,7 +59,22 @@ export default class ParametricQueriesStorage {
         PREFIX datasets: <${resourcesNs}datasets/>
         `;
 
-        this.outputUrl = buildStoreGraphUrl(outputGraphStoreURL, outputGraphname);
+        if (outputGraphStoreURL) {
+            const outputUrl = buildStoreGraphUrl(outputGraphStoreURL, outputGraphname);
+            this.outputGraphConnection = new SparqlGraphConnection(outputUrl, {
+                preamble: this.preamble
+            });
+        } else if (outputDirPath) {
+            const outputFilename = outputGraphnameId || 'output';
+            const extension = options.format === 'application/n-quads' ? 'nq' : 'nt';
+            this.outputGraphConnection = new RdfFileConnection(
+                outputDirPath + outputFilename + '.' + extension, {
+                    preamble: this.preamble,
+                    outputGraphname: outputGraphname,
+                    format: options.format
+                });
+        }
+
     }
 
     async recordProcessStart() {
@@ -99,18 +119,21 @@ export default class ParametricQueriesStorage {
         });
 
         if (overwriteOutputGraph) {
-            try {
-                await httpCall(this.outputUrl, {
-                    method: 'DELETE'
-                });
-            } catch(e) {
-                // do nothing if error is given because the graph does not exist
+            await this.outputGraphConnection.delete();
+            if (this.options.dataset) {
+                await this.outputGraphConnection.post(`
+                <${this.options.dataset}> a void:Dataset.
+                `);
             }
         }
 
-        this.outputGraphConnection = new SparqlGraphConnection(this.outputUrl, {
-            preamble: this.preamble
-        })
+        if (this.options.cluster) {
+            await this.outputGraphConnection.post(`
+            <${this.options.cluster}> a spaclus:QueryCluster.
+            ${this.options.dataset ? `<${this.options.cluster}> dcterms:isPartOf <${this.options.dataset}>.` : ''}
+            ${'clusterId' in this.options ? `<${this.options.cluster}> dcterms:identifier ${this.options.clusterId}.` : ''}
+            `);
+        }
 
         return actionId
     }
@@ -122,10 +145,16 @@ export default class ParametricQueriesStorage {
 
             const queryId = ++this.queryCount;
 
-            var queryTurtle = (parentQueryId ?
+            var queryTurtle = (
+                parentQueryId ?
                     `templates:${queryId} prov:specializationOf  templates:${parentQueryId}.` :
                     // `templates:${queryId} prov:wasGeneratedBy actions:${actionId}.`) + `
-                    `actions:${actionId} schema:result templates:${queryId}.`) + `
+                    // `actions:${actionId} schema:result templates:${queryId}.
+                    this.options.cluster ?
+                        `templates:${queryId} prov:specializationOf <${this.options.cluster}>.` :
+                        this.options.dataset ?
+                            `templates:${queryId} dcterms:isPartOf <${this.options.dataset}>.` :
+                            `actions:${actionId} schema:result templates:${queryId}.`) + `
                 templates:${queryId}
                     a prvTypes:QueryTemplate, sh:Parametrizable;
                     lsqv:text ${escapeLiteral(text)}.
@@ -182,7 +211,12 @@ export default class ParametricQueriesStorage {
 
         for (const lsqId of queryLsqIds) {
             var queryTurtle = `
-            actions:${actionId} schema:result  <${LSQ_QUERIES_PREFIX}${lsqId}>.
+            actions:${actionId} schema:result <${LSQ_QUERIES_PREFIX}${lsqId}>.
+            ${this.options.cluster ?
+                `<${this.options.cluster}> rdfs:member <${LSQ_QUERIES_PREFIX}${lsqId}>.` :
+                this.options.dataset ?
+                    `<${this.options.dataset}> rdfs:member <${LSQ_QUERIES_PREFIX}${lsqId}> .` :
+                    `actions:${actionId} schema:result <${LSQ_QUERIES_PREFIX}${lsqId}>.`}
             <${LSQ_QUERIES_PREFIX}${lsqId}> a prvTypes:SPARQLQuery.
             `;
             this.outputGraphConnection.post(queryTurtle);

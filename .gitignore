@@ -108,3 +108,5 @@ input/
 output/
 
 .DS_Store
+dump/
+output-rdf/
