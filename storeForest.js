@@ -123,6 +123,9 @@ export default class ParametricQueriesStorage {
             if (this.options.dataset) {
                 await this.outputGraphConnection.post(`
                 <${this.options.dataset}> a void:Dataset.
+                ${this.options.datasetId ?
+                    `<${this.options.dataset}> dcterms:identifier ${escapeLiteral(this.options.datasetId)}.` :
+                    ''}
                 `);
             }
         }
