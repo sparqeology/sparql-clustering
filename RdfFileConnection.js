@@ -1,8 +1,8 @@
-import { Buffer } from 'node:buffer';
+import fsStream from 'node:stream';
 import fs from 'node:fs';
 import N3 from 'n3';
 
-const DEFAULT_BUFFER_SIZE = 5000000;
+const DEFAULT_BUFFER_SIZE = 10000000;
 
 async function turtleToNT(turtleStr, options = {}) {
     const format = options.format === 'application/n-quads' && options.outputGraphname ?
@@ -53,6 +53,10 @@ export default class RdfFileConnection {
 
     async post(turtleStr) {
         const nTriplesStr = await turtleToNT(this.options.preamble + '\n' + turtleStr, this.options);
+        await this.addToBuffer(nTriplesStr);
+    }
+
+    async addToBuffer(nTriplesStr) {
         const newDataBuffer = Buffer.from(nTriplesStr);
         const writtenBytes = newDataBuffer.copy(this.buffer, this.bufferPosition);
         this.bufferPosition += writtenBytes;
@@ -62,18 +66,16 @@ export default class RdfFileConnection {
     }
 
     async _flush(lastNTriplesStr) {
-        const payload = this.buffer.toString('utf-8', 0, this.bufferPosition) + (lastNTriplesStr || '');
+        await fs.promises.appendFile(this.filePath, this.bufferPosition >= this.buffer.byteLength ? this.buffer : this.buffer.slice(0, this.bufferPosition));
         this.buffer.fill();
         this.bufferPosition = 0;
-        await fs.promises.appendFile(this.filePath, payload);
+        if (lastNTriplesStr) {
+            this.addToBuffer(lastNTriplesStr);
+        }
     }
 
     async sync() {
-        // console.log('Flushing connection... ');
         await this._flush();
-        // console.log('Done!');
-        // console.log('Waiting for responses...');
-        // console.log('Done!');
     }
 
 }
