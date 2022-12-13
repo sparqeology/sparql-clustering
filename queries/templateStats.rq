@@ -1,0 +1,33 @@
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX lsqv: <http://lsq.aksw.org/vocab#>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+PREFIX prv: <http://purl.org/net/provenance/ns#>
+PREFIX prvTypes: <http://purl.org/net/provenance/types#>
+PREFIX wfprov: <http://purl.org/wf4ever/wfprov#>
+PREFIX sh: <http://www.w3.org/ns/shacl#>
+PREFIX schema: <https://schema.org/>
+PREFIX spaclus: <http://sparql-clustering/vocab/>
+PREFIX dcterms: <http://purl.org/dc/terms/>
+PREFIX void: <http://rdfs.org/ns/void#>
+
+SELECT
+    ?queryTemplateId ?queryText
+    (COUNT(*) AS ?instanceCount)
+WHERE {
+    {
+        ?queryTemplate dcterms:isPartOf $dataset.
+        ?queryTemplate lsqv:text ?queryText.
+        ?instance prv:usedGuideline ?queryTemplate.
+        BIND(xsd:integer(SUBSTR(STR(?queryTemplate), 40)) AS ?queryTemplateId).
+    #     # http://sparql-clustering.org/templates/
+    } UNION {
+        ?instance a prvTypes:DataCreation.
+        BIND(0 AS ?queryTemplateId).
+        BIND('' AS ?queryText).
+    }
+}
+GROUP BY ?queryTemplateId ?queryText
+ORDER BY DESC(?instanceCount)
+
