@@ -24,10 +24,11 @@
     "fetch-sparql-endpoint": "^3.1.1",
     "level": "^8.0.0",
     "n3": "^1.16.2",
-    "node-fetch": "^3.2.10",
+    "node-fetch": "^3.3.0",
     "rdf-parse": "^2.0.0",
     "sparqljs": "^3.5.2",
     "stream-to-async-iterator": "^1.0.0",
+    "unbzip2-stream": "^1.4.3",
     "uuid": "^9.0.0"
   },
   "devDependencies": {
