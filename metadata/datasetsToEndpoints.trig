@@ -39,4 +39,5 @@
     <http://lsq.aksw.org/datasets/bench-wikidata-interval4-organic-lsq2> lsqv:endpoint <https://query.wikidata.org/>.
     <http://lsq.aksw.org/datasets/bench-wikidata-interval5-organic-lsq2> lsqv:endpoint <https://query.wikidata.org/>.
     <http://lsq.aksw.org/datasets/bench-wikidata-interval6-organic-lsq2> lsqv:endpoint <https://query.wikidata.org/>.
+    <http://lsq.aksw.org/datasets/bench-wikidata-interval7-organic-lsq2> lsqv:endpoint <https://query.wikidata.org/>.
 }
