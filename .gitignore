@@ -103,10 +103,9 @@ dist
 # TernJS port file
 .tern-port
 
-# Input files
+# Input/output files
 input/
 output/
 
 .DS_Store
 dump/
-output-rdf/

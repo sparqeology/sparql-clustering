@@ -1,3 +1,5 @@
+import { Readable } from 'stream';
+import fs from 'fs';
 import crypto from 'crypto';
 import {v4 as uuidv4} from 'uuid';
 import { rebaseTerm, escapeLiteral } from './turtleEncoding.js';
@@ -5,7 +7,8 @@ import { generateParameterLabel, mergePreambles } from './queryHandling.js';
 import SparqlGraphConnection from './SparqlGraphConnection.js';
 import httpCall from './httpCall.js';
 import { buildStoreGraphUrl } from './queryEndpoint.js';
-import RdfFileConnection from './RdfFileConnection.js';
+import { stringify } from 'csv-stringify';
+import RdfFileStreamConnection from './RdfFileStreamConnection.js';
 const JSON_DATATYPE_URI = 'https://www.iana.org/assignments/media-types/application/json';
 
 function md5(str) {
@@ -66,13 +69,17 @@ export default class ParametricQueriesStorage {
             });
         } else if (outputDirPath) {
             const outputFilename = outputGraphnameId || 'output';
-            const extension = options.format === 'application/n-quads' ? 'nq' : 'nt';
-            this.outputGraphConnection = new RdfFileConnection(
+            const extension =
+                (options.format === 'application/n-quads' ? 'nq' : 'nt') +
+                (options.compress ? '.gz' : '');
+            this.outputGraphConnection = new RdfFileStreamConnection (
                 outputDirPath + outputFilename + '.' + extension, {
                     preamble: this.preamble,
                     outputGraphname: outputGraphname,
-                    format: options.format
-                });
+                    format: options.format,
+                    compress: options.compress
+                }
+            );
         }
 
     }
@@ -160,6 +167,7 @@ export default class ParametricQueriesStorage {
                             `actions:${actionId} schema:result templates:${queryId}.`) + `
                 templates:${queryId}
                     a prvTypes:QueryTemplate, sh:Parametrizable;
+                    dcterms:identifier ${queryId};
                     lsqv:text ${escapeLiteral(text)}.
             `);
 
@@ -225,6 +233,43 @@ export default class ParametricQueriesStorage {
         }
 
 
+    }
+
+    storeStats(groupingResult) {
+        const {
+            queryForest, nonClusterizedQueryIds,
+            totalQueries, totalExecutions,
+            timeOfFirstExecution, timeOfLastExecution
+        } =
+            'queryForest' in groupingResult ?
+                groupingResult :
+                {queryForest: groupingResult};
+        const {statsFilePath} = this.options;
+        const queryStatsStream = new Readable({objectMode: true});
+        queryStatsStream.pipe(stringify({header: true})).pipe(fs.createWriteStream(statsFilePath));
+        if (totalQueries) {
+            queryStatsStream.push({
+                queryId: 0,
+                text: '',
+                numOfInstances: totalQueries,
+                numOfExecutions: totalExecutions,
+                timeOfFirstExecution, timeOfLastExecution,
+                numOfSpecializations: nonClusterizedQueryIds ? nonClusterizedQueryIds.length : 0
+            })
+        }
+        queryForest.map(({
+            text, numOfInstances, numOfExecutions,
+            timeOfFirstExecution, timeOfLastExecution,
+            specializations
+        }, queryIndex) => ({
+            queryId: queryIndex + 1, text,
+            numOfInstances, numOfExecutions,
+            timeOfFirstExecution, timeOfLastExecution,
+            numOfSpecializations: specializations.length
+        })).sort((a, b) => b.numOfExecutions - a.numOfExecutions).forEach(queryStats => {
+            queryStatsStream.push(queryStats);
+        });
+        queryStatsStream.push(null);
     }
 
     async recordProcessCompletion(actionId) {

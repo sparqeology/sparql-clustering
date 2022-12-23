@@ -1,4 +1,3 @@
-import fsStream from 'node:stream';
 import fs from 'node:fs';
 import N3 from 'n3';
 
@@ -40,10 +39,9 @@ async function turtleToNT(turtleStr, options = {}) {
 export default class RdfFileConnection {
 
     constructor(filePath, options = {}) {
-        // console.log(this.options);
         this.filePath = filePath;
         this.options = options;
-        this.buffer = Buffer.alloc(options.bufferSize || DEFAULT_BUFFER_SIZE);
+        this.buffer = Buffer.allocUnsafe(options.bufferSize || DEFAULT_BUFFER_SIZE);
         this.bufferPosition = 0;
     }
 
@@ -67,10 +65,9 @@ export default class RdfFileConnection {
 
     async _flush(lastNTriplesStr) {
         await fs.promises.appendFile(this.filePath, this.bufferPosition >= this.buffer.byteLength ? this.buffer : this.buffer.slice(0, this.bufferPosition));
-        this.buffer.fill();
         this.bufferPosition = 0;
         if (lastNTriplesStr) {
-            this.addToBuffer(lastNTriplesStr);
+            await this.addToBuffer(lastNTriplesStr);
         }
     }
 

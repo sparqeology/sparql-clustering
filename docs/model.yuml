@@ -1,0 +1,16 @@
+// {type:class}
+
+[prvTypes:QueryTemplate]-dcterms:isPartOf>[void:Dataset]
+[spaclus:QueryCluster|dcterms:identifier : xsd:integer]-dcterms:isPartOf>[void:Dataset]
+[prvTypes:QueryTemplate]-prov:specializationOf>[spaclus:QueryCluster]
+[prvTypes:QueryTemplate]-prov:specializationOf>[prvTypes:QueryTemplate]
+[prvTypes:QueryTemplate]-sh:parameter>[sh:Parameter|sh:description : xsd:string]
+
+[prvTypes:DataCreation]-prv:usedGuideline>[prvTypes:QueryTemplate]
+[prvTypes:SPARQLQuery]-prv:createdBy>[prvTypes:DataCreation]
+[void:Dataset]-rdfs:member>[prvTypes:SPARQLQuery]
+[spaclus:QueryCluster]-rdfs:member>[prvTypes:SPARQLQuery]
+
+[prvTypes:DataCreation]-prv:usedData>[wfProv:Artifact]
+[wfProv:Artifact|lsqv:text : xsd:string; rdf:value : rdf:Thing]-wfProv:describedByParameter>[sh:Parameter]
+

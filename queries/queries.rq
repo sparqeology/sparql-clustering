@@ -1,6 +1,6 @@
 #PREFIX lsqr: <http://lsq.aksw.org/>
 PREFIX lsqv: <http://lsq.aksw.org/vocab#>
-#PREFIX prov: <http://www.w3.org/ns/prov#>
+PREFIX prov: <http://www.w3.org/ns/prov#>
 
 # Query: outgoing 
 #
@@ -22,12 +22,18 @@ PREFIX lsqv: <http://lsq.aksw.org/vocab#>
 # lsqv:hostHash
 # lsqv:uri
 
-SELECT DISTINCT ?id ?text #(COUNT(?exec) AS ?numOfExecutions) (COUNT(DISTINCT ?host) AS ?numOfHosts)
+SELECT #DISTINCT
+    ?id ?text
+    (COUNT(?exec) AS ?numOfExecutions)
+    (MIN(?execTime) AS ?timeOfFirstExecution)
+    (MAX(?execTime) AS ?timeOfLastExecution)
+    #(COUNT(DISTINCT ?host) AS ?numOfHosts)
 WHERE {
     ?query lsqv:hash ?id;
-        lsqv:text ?text.
-#          lsqv:hasRemoteExec ?exec.
+        lsqv:text ?text;
+        lsqv:hasRemoteExec ?exec.
+    ?exec prov:atTime ?execTime.
 #    ?exec lsqv:hostHash ?host.
 }
-#GROUP BY ?id ?text
+GROUP BY ?id ?text
 #LIMIT 25
