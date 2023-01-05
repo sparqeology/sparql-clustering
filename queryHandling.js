@@ -301,10 +301,11 @@ export function mergePreambles(preamble1, preamble2) {
 // const inputStr = `
 // PREFIX foaf: <http://xmlns.com/foaf/0.1/> 
 // PREFIX xsd: <http://www.w3.org/2001/XMLSchema#/> 
+// PREFIX ex: <http://www.example.com/> 
 
 // SELECT * {
 //     ?mickey foaf:name "Pippo"@en, "23"^^<http://www.w3.org/2001/XMLSchema#int>, 42, "12"^^xsd:int
-
+//     VALUES ?mickey { <ex:m1> <ex:m2> <ex:m3> }
 // #        foaf:knows ?other.
 // }
 // `;
