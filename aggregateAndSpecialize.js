@@ -13,7 +13,9 @@ function aggregateInstances({instances, specializations, ...queryData}) {
         timeOfLastExecution: instances
             .map(instance => instance.timeOfLastExecution)
             .reduce((maxTime, time) =>  maxTime > time ? maxTime : time),
-        specializations: specializations.map(aggregateInstances)
+        specializations: specializations.map(aggregateInstances),
+        sumOfLogOfNumOfExecutions:
+            instances.reduce((sum, instance) => sum + Math.log2(instance.numOfExecutions), 0)
     }
 }
 
