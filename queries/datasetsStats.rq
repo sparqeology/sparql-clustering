@@ -1,0 +1,32 @@
+PREFIX sd: <http://www.w3.org/ns/sparql-service-description#>
+PREFIX lsqv: <http://lsq.aksw.org/vocab#>
+PREFIX sh: <http://www.w3.org/ns/shacl#>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+PREFIX lsqDs: <http://lsq.aksw.org/datasets/>
+
+SELECT
+    ?datasetId
+    (COUNT(DISTINCT ?query) AS ?numOfQueries) 
+    (COUNT(DISTINCT ?exec) AS ?numOfExecutions) 
+    (COUNT(DISTINCT ?host) AS ?numOfHosts) 
+    (MIN(?execTime) AS ?begin)
+    (MAX(?execTime) AS ?end)
+WHERE {
+    GRAPH <http://lsq.aksw.org/datasets> {
+        ?dataset a sd:NamedGraph.
+        OPTIONAL {
+            ?dataset lsqv:endpoint ?endpoint.
+        }
+    }
+    BIND (SUBSTR(STR(?dataset), STRLEN(STR(lsqDs:)) + 1) AS ?datasetId).
+    BIND (IRI(CONCAT(STR(?dataset), '/execs')) AS ?execGraph).
+
+    GRAPH ?execGraph {
+        ?query lsqv:hasRemoteExec ?exec.
+        ?exec prov:atTime ?execTime.
+        OPTIONAL {?exec lsqv:hostHash ?host}
+    }
+}
+GROUP BY ?datasetId
+ORDER BY ?dataset
+

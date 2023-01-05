@@ -18,6 +18,8 @@
   },
   "homepage": "https://github.com/miguel76/sparql-clustering#readme",
   "dependencies": {
+    "@comunica/bindings-factory": "^2.5.1",
+    "@comunica/query-sparql": "^2.5.2",
     "@rdfjs/data-model": "^2.0.1",
     "csv-parse": "^5.2.2",
     "csv-stringify": "^6.1.3",
@@ -25,6 +27,7 @@
     "level": "^8.0.0",
     "n3": "^1.16.2",
     "node-fetch": "^3.3.0",
+    "rdf-data-factory": "^1.1.1",
     "rdf-parse": "^2.0.0",
     "sparqljs": "^3.5.2",
     "stream-to-async-iterator": "^1.0.0",

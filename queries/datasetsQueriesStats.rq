@@ -1,0 +1,47 @@
+PREFIX sd: <http://www.w3.org/ns/sparql-service-description#>
+PREFIX lsqv: <http://lsq.aksw.org/vocab#>
+PREFIX sh: <http://www.w3.org/ns/shacl#>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+
+SELECT
+    ?datasetId
+    (COUNT(DISTINCT ?query) AS ?numOfQueries) 
+    (COUNT(DISTINCT ?exec) AS ?numOfExecutions) 
+    (COUNT(DISTINCT ?host) AS ?numOfHosts) 
+    (MIN(?execTime) AS ?begin)
+    (MAX(?execTime) AS ?end)
+    (MAX(?queryUsageInterval) AS ?maxQueryUsageInterval)
+    (AVG(?queryUsageInterval) AS ?avgQueryUsageInterval)
+    (MAX(?queryNumOfHosts) AS ?maxQueryNumOfHosts)
+    (AVG(?queryNumOfHosts) AS ?avgQueryNumOfHosts)
+    (MAX(?queryNumOfExecutions) AS ?maxQueryNumOfExecutions)
+    (AVG(?queryNumOfExecutions) AS ?avgQueryNumOfExecutions)
+WHERE {
+    ?dataset a sd:NamedGraph.
+    OPTIONAL {
+        ?dataset lsqv:endpoint ?endpoint.
+    }
+    BIND (SUBSTR(STR(?dataset), STRLEN(STR(<http://lsq.aksw.org/datasets/>)) + 1) AS ?datasetId).
+
+    GRAPH ?dataset {
+        {
+            SELECT 
+                ?query
+                (COUNT(DISTINCT ?exec) AS ?queryNumOfExecutions) 
+                (COUNT(DISTINCT ?host) AS ?queryNumOfHosts) 
+                (MAX(?execTime) - MIN(?execTime) AS ?queryUsageInterval)
+            WHERE {
+                ?query lsqv:hasRemoteExec ?exec.
+                ?exec prov:atTime ?execTime.
+                OPTIONAL {?exec lsqv:hostHash ?host}
+            }
+            GROUP BY ?query
+        }.
+        ?query lsqv:hasRemoteExec ?exec.
+        ?exec prov:atTime ?execTime.
+        OPTIONAL {?exec lsqv:hostHash ?host}
+    }
+}
+GROUP BY ?dataset
+ORDER BY ?dataset
+

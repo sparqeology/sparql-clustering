@@ -1,0 +1,21 @@
+PREFIX lsqv: <http://lsq.aksw.org/vocab#>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+
+
+SELECT
+    ?id
+    (COUNT(?exec) AS ?numOfExecutions)
+    (MIN(?execTime) AS ?timeOfFirstExecution)
+    (MAX(?execTime) AS ?timeOfLastExecution)
+    (COUNT(DISTINCT ?host) AS ?numOfHosts)
+WHERE {
+    GRAPH $queries {
+        ?query lsqv:hash ?id
+    }
+    GRAPH $execs {
+        ?query lsqv:hasRemoteExec ?exec.
+        ?exec prov:atTime ?execTime.
+        OPTIONAL {?exec lsqv:hostHash ?host}
+    }
+}
+GROUP BY ?id
