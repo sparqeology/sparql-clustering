@@ -1,0 +1,16 @@
+@prefix ds: <http://lsq.aksw.org/datasets/>.
+@prefix sd: <http://www.w3.org/ns/sparql-service-description#>.
+<http://lsq.aksw.org/datasets> {
+
+  ds: sd:namedGraph
+    ds:wikidata,
+    ds:bio2rdf,
+    ds:dbpedia-2015,
+    ds:dbpedia.
+
+  ds:wikidata a sd:NamedGraph.
+  ds:bio2rdf a sd:NamedGraph.
+  ds:dbpedia-2015 a sd:NamedGraph.
+  ds:dbpedia a sd:NamedGraph.
+
+}
