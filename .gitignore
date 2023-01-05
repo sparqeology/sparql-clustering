@@ -106,6 +106,7 @@ dist
 # Input/output files
 input/
 output/
+tmp/
 
 .DS_Store
 dump/
