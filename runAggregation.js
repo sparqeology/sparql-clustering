@@ -1,13 +1,15 @@
 import fs from 'fs';
+import { parse } from 'csv-parse';
 
 import aggregateAndSpecialize from './aggregateAndSpecialize.js';
 import ParametricQueriesStorage from './storeForest.js';
 import queryEndpoint from './queryEndpoint.js';
 
-const queriesQuery = fs.readFileSync('./queries/queries.rq');
+const queriesQuery = '' + fs.readFileSync('./queries/queries.rq');
 const clustersQuery = '' + fs.readFileSync('./queries/clusters.rq');
 const queriesOfClusterQuery = '' + fs.readFileSync('./queries/queriesOfCluster.rq');
-const datasetsQuery = fs.readFileSync('./queries/datasets.rq');
+const datasetsQuery = '' + fs.readFileSync('./queries/datasets.rq');
+const datasetsFromQuery = '' + fs.readFileSync('./queries/datasetsFrom.rq');
 
 /**
  * Run the aggregation process
@@ -41,10 +43,18 @@ const datasetsQuery = fs.readFileSync('./queries/datasets.rq');
  * @param  {object} options.defaultPreamble Default preamble object used for IRI expansion on top of in-query preamble.
 */
 export default async function runAggregation(options) {
-    if (options.datasetsGraphname) {
-        const {datasetsGraphname, defaultPreamble, statsDirPath, ...otherOptions} = options;
-        const datasets = queryEndpoint(
-            options.inputEndpointURL, [datasetsGraphname], datasetsQuery);
+    if (options.datasetsGraphname || options.datasetsCsvPath) {
+        const {datasetsGraphname, datasetsCsvPath, defaultPreamble, statsDirPath, ...otherOptions} = options;
+        let datasets;
+        if (datasetsGraphname) {
+            datasets = queryEndpoint(
+                options.inputEndpointURL, [datasetsGraphname],
+                options.startFromDataset ?
+                    datasetsFromQuery.replaceAll('$startFromDataset', `<${options.startFromDataset}>`) :
+                    datasetsQuery);
+        } else {
+            datasets = fs.createReadStream(datasetsCsvPath).pipe(parse({columns: true}));
+        }
         for await (const {dataset, datasetId, endpoint, prefixesJson} of datasets) {
             if (!options.excludeDatasets || !options.excludeDatasets.includes(dataset)) {
                 const prefixes = prefixesJson && JSON.parse(prefixesJson);
@@ -53,7 +63,7 @@ export default async function runAggregation(options) {
                     ...otherOptions,
                     dataset,
                     datasetId,
-                    inputGraphnames: [dataset],
+                    inputGraphnames: [`${dataset}/queries`,`${dataset}/execs`],
                     outputGraphname: `${dataset}/templates`,
                     outputGraphnameId: datasetId,
                     defaultPreamble: defaultPreamble ?
@@ -153,15 +163,15 @@ async function test() {
         // minBindingDivergenceRatio: 0.05,
         asArray: true,
         // minNumOfInstances: 2,
-        minNumOfExecutions: 1000,
-        minNumOfExecutionsForSimpleQueries: 1000,
+        // minNumOfExecutions: 3,
+        // minNumOfExecutionsForSimpleQueries: 3,
         // defaultPreamble: {
         //     prefixes: dbpediaPrefixes
         // },
         // showBindingDistributions: true
         inputEndpointURL: endpointURL, 
         // outputGraphStoreURL: graphStoreURL, 
-        outputDirPath: './output/1000_execs/rdf/',
+        // outputDirPath: './output/all/rdf/',
         metadataUpdateURL: updateURL,
         // inputGraphnames: ['http://lsq.aksw.org/datasets/bench-dbpedia-20151126-lsq2'], //, 'http://lsq.aksw.org/clustering/v1'],
         // inputGraphnames: ['http://lsq.aksw.org/datasets/bench-affymetrix-lsq2'], //, 'http://lsq.aksw.org/clustering/v1'],
@@ -169,60 +179,66 @@ async function test() {
         // outputGraphname,
         metadataGraphname,
         resourcesNs: 'http://sparql-clustering.org/',
-        datasetsGraphname: 'http://lsq.aksw.org/datasets',
+        // datasetsGraphname: 'http://lsq.aksw.org/datasets',
+        datasetsCsvPath: './input/datasets.csv',
         // clustersGraphname: 'http://lsq.aksw.org/clustering/v1',
         // format: 'application/n-quads'
         // cluster: 'http://lsq.aksw.org/datasets/bench-dbpedia-20151126-lsq2/clusters/1',
-        statsDirPath: './output/1000_execs/stats/topTemplates/',
+        statsDirPath: './output/all/stats/topTemplates/withLogs/',
         compress: true,
+        // startFromDataset: 'http://lsq.aksw.org/datasets/bench-taxonomy-lsq2',
         excludeDatasets: [
-        //     'http://lsq.aksw.org/datasets/bench-affymetrix-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-biomedels-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-bioportal-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-ctd-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-dbsnp-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-drugbank-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-genage-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-gendr-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-goa-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-hgnc-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-irefindex-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-mgi-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-ncbigene-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-omim-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-pharmgkb-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-sabiork-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-sgd-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-sidr-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-taxonomy-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-wormbase-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-dbpedia-20160314-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-gene-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-kegg-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-linkedspl-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-dbpedia-20151124-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-dbpedia-20151126-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-dbpedia-20151230-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-dbpedia-20160117-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-dbpedia-20160212-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-dbpedia-20160301-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-dbpedia-20160303-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-dbpedia-20160411-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-linkedGeoData-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-swdf-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-dbpedia.3.5.1.log-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-dbpedia-20151213-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-dbpedia-20151025-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-dbpedia-20160304-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-dbpedia-20160222-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-wikidata-interval1-organic-lsq2',
-        // //     // 'http://lsq.aksw.org/datasets/bench-homologene-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-wikidata-interval2-organic-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-wikidata-interval3-organic-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-wikidata-interval4-organic-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-wikidata-interval5-organic-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-wikidata-interval6-organic-lsq2',
-        //     'http://lsq.aksw.org/datasets/bench-wikidata-interval7-organic-lsq2',
+            'http://lsq.aksw.org/datasets/bench-affymetrix-lsq2',
+            'http://lsq.aksw.org/datasets/bench-biomedels-lsq2',
+            'http://lsq.aksw.org/datasets/bench-bioportal-lsq2',
+            'http://lsq.aksw.org/datasets/bench-ctd-lsq2',
+            'http://lsq.aksw.org/datasets/bench-dbsnp-lsq2',
+            'http://lsq.aksw.org/datasets/bench-drugbank-lsq2',
+            'http://lsq.aksw.org/datasets/bench-genage-lsq2',
+            'http://lsq.aksw.org/datasets/bench-gendr-lsq2',
+            'http://lsq.aksw.org/datasets/bench-goa-lsq2',
+            'http://lsq.aksw.org/datasets/bench-hgnc-lsq2',
+            'http://lsq.aksw.org/datasets/bench-irefindex-lsq2',
+            'http://lsq.aksw.org/datasets/bench-mgi-lsq2',
+            'http://lsq.aksw.org/datasets/bench-ncbigene-lsq2',
+            'http://lsq.aksw.org/datasets/bench-omim-lsq2',
+            'http://lsq.aksw.org/datasets/bench-pharmgkb-lsq2',
+            'http://lsq.aksw.org/datasets/bench-sabiork-lsq2',
+            'http://lsq.aksw.org/datasets/bench-sgd-lsq2',
+            'http://lsq.aksw.org/datasets/bench-sidr-lsq2',
+            'http://lsq.aksw.org/datasets/bench-taxonomy-lsq2',
+            'http://lsq.aksw.org/datasets/bench-wormbase-lsq2',
+            'http://lsq.aksw.org/datasets/bench-dbpedia-20160314-lsq2',
+            'http://lsq.aksw.org/datasets/bench-gene-lsq2',
+            'http://lsq.aksw.org/datasets/bench-kegg-lsq2',
+            'http://lsq.aksw.org/datasets/bench-linkedspl-lsq2',
+            'http://lsq.aksw.org/datasets/bench-dbpedia-20151124-lsq2',
+            'http://lsq.aksw.org/datasets/bench-dbpedia-20151126-lsq2',
+            'http://lsq.aksw.org/datasets/bench-dbpedia-20151230-lsq2',
+            'http://lsq.aksw.org/datasets/bench-dbpedia-20160117-lsq2',
+            'http://lsq.aksw.org/datasets/bench-dbpedia-20160212-lsq2',
+            'http://lsq.aksw.org/datasets/bench-dbpedia-20160301-lsq2',
+            'http://lsq.aksw.org/datasets/bench-dbpedia-20160303-lsq2',
+            'http://lsq.aksw.org/datasets/bench-dbpedia-20160411-lsq2',
+            'http://lsq.aksw.org/datasets/bench-linkedGeoData-lsq2',
+            'http://lsq.aksw.org/datasets/bench-swdf-lsq2',
+            'http://lsq.aksw.org/datasets/bench-dbpedia.3.5.1.log-lsq2',
+            'http://lsq.aksw.org/datasets/bench-dbpedia-20151213-lsq2',
+            'http://lsq.aksw.org/datasets/bench-dbpedia-20151025-lsq2',
+            'http://lsq.aksw.org/datasets/bench-dbpedia-20160304-lsq2',
+            'http://lsq.aksw.org/datasets/bench-dbpedia-20160222-lsq2',
+            'http://lsq.aksw.org/datasets/bench-wikidata-interval1-organic-lsq2',
+            'http://lsq.aksw.org/datasets/bench-homologene-lsq2',
+            'http://lsq.aksw.org/datasets/bench-wikidata-interval2-organic-lsq2',
+            'http://lsq.aksw.org/datasets/bench-wikidata-interval3-organic-lsq2',
+            'http://lsq.aksw.org/datasets/bench-wikidata-interval4-organic-lsq2',
+            'http://lsq.aksw.org/datasets/bench-wikidata-interval5-organic-lsq2',
+            'http://lsq.aksw.org/datasets/bench-wikidata-interval6-organic-lsq2',
+            'http://lsq.aksw.org/datasets/bench-wikidata-interval7-organic-lsq2',
+            // 'http://lsq.aksw.org/datasets/dbpedia',
+            'http://lsq.aksw.org/datasets/bio2rdf',
+            // 'http://lsq.aksw.org/datasets/dbpedia-2015',
+            'http://lsq.aksw.org/datasets/wikidata',
         ]
 
     })
