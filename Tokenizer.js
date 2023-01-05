@@ -40,12 +40,16 @@ export default class Tokenizer {
         ].map(terminal => sparqlParser.symbols_[terminal]);
         this.DATATYPE_SYMBOL = sparqlParser.symbols_['^^'];
         this.LANGTAG_SYMBOL = sparqlParser.symbols_['LANGTAG'];
+        this.VALUES_SYMBOL = sparqlParser.symbols_['VALUES']; 
+        this.BEGIN_VALUES_SYMBOL = sparqlParser.symbols_['{']; 
+        this.END_VALUES_SYMBOL = sparqlParser.symbols_['}']; 
         this.EOF = sparqlParser.lexer.EOF;
         this.options = options;
         const baseLexer = sparqlParser.lexer;
         baseLexer.setInput(queryStr);
         this.lexer = new LookaheadLexer(baseLexer);
         this.afterPreamble = false;
+        this.afterValues = false;
         this.preamble = '';
     }
 
@@ -81,23 +85,40 @@ export default class Tokenizer {
                     return {
                         match: str + '^^' + this.lexer.match,
                         parameterizable: true
-                    }
+                    };
                 }
                 return {
                     match: str + this.lexer.match,
                     parameterizable: true
-                }
+                };
             } else {
                 return {
                     match: this.lexer.match,
                     parameterizable: true
-                }
+                };
             }
+        } else if (symbol === this.VALUES_SYMBOL) {
+            this.afterValues = true;
+            return {
+                match: this.lexer.match,
+                parameterizable: false
+            };
+        } else if (this.afterValues && symbol === this.BEGIN_VALUES_SYMBOL) {
+            let match = this.lexer.match;
+            while (this.lexer.next() !== this.END_VALUES_SYMBOL) {
+                match += this.lexer.match;
+            }
+            match += this.lexer.match;
+            this.afterValues = false;
+            return {
+                match,
+                parameterizable: true
+            };
         } else {
             return {
                 match: this.lexer.match,
                 parameterizable: false
-            }
+            };
         }
     }
 }
