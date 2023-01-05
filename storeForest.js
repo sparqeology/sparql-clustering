@@ -125,24 +125,26 @@ export default class ParametricQueriesStorage {
             body: metadataSetup
         });
 
-        if (overwriteOutputGraph) {
-            await this.outputGraphConnection.delete();
-            if (this.options.dataset) {
+        if (this.outputGraphConnection) {
+            if (overwriteOutputGraph) {
+                await this.outputGraphConnection.delete();
+                if (this.options.dataset) {
+                    await this.outputGraphConnection.post(`
+                    <${this.options.dataset}> a void:Dataset.
+                    ${this.options.datasetId ?
+                        `<${this.options.dataset}> dcterms:identifier ${escapeLiteral(this.options.datasetId)}.` :
+                        ''}
+                    `);
+                }
+            }
+
+            if (this.options.cluster) {
                 await this.outputGraphConnection.post(`
-                <${this.options.dataset}> a void:Dataset.
-                ${this.options.datasetId ?
-                    `<${this.options.dataset}> dcterms:identifier ${escapeLiteral(this.options.datasetId)}.` :
-                    ''}
+                <${this.options.cluster}> a spaclus:QueryCluster.
+                ${this.options.dataset ? `<${this.options.cluster}> dcterms:isPartOf <${this.options.dataset}>.` : ''}
+                ${'clusterId' in this.options ? `<${this.options.cluster}> dcterms:identifier ${this.options.clusterId}.` : ''}
                 `);
             }
-        }
-
-        if (this.options.cluster) {
-            await this.outputGraphConnection.post(`
-            <${this.options.cluster}> a spaclus:QueryCluster.
-            ${this.options.dataset ? `<${this.options.cluster}> dcterms:isPartOf <${this.options.dataset}>.` : ''}
-            ${'clusterId' in this.options ? `<${this.options.cluster}> dcterms:identifier ${this.options.clusterId}.` : ''}
-            `);
         }
 
         return actionId
@@ -150,88 +152,90 @@ export default class ParametricQueriesStorage {
 
     async storeForest(forest, parentQueryId, actionId) {
 
-        for (const query of forest) {
-            const {text, instances, specializations, preamble} = query;
+        if (this.outputGraphConnection) {
+            for (const query of forest) {
+                const {text, instances, specializations, preamble} = query;
 
-            const queryId = ++this.queryCount;
+                const queryId = ++this.queryCount;
 
-            await this.outputGraphConnection.post((
-                parentQueryId ?
-                    `templates:${queryId} prov:specializationOf  templates:${parentQueryId}.` :
-                    // `templates:${queryId} prov:wasGeneratedBy actions:${actionId}.`) + `
-                    // `actions:${actionId} schema:result templates:${queryId}.
-                    this.options.cluster ?
-                        `templates:${queryId} prov:specializationOf <${this.options.cluster}>.` :
-                        this.options.dataset ?
-                            `templates:${queryId} dcterms:isPartOf <${this.options.dataset}>.` :
-                            `actions:${actionId} schema:result templates:${queryId}.`) + `
-                templates:${queryId}
-                    a prvTypes:QueryTemplate, sh:Parametrizable;
-                    dcterms:identifier ${queryId};
-                    lsqv:text ${escapeLiteral(text)}.
-            `);
-
-            for (const paramIndex of instances[0].bindings.map(({}, paramIndex) => paramIndex)) {
-                const paramName = generateParameterLabel(paramIndex).slice(1);
-                await this.outputGraphConnection.post(`
-                    templates:${queryId} sh:parameter params:${queryId}_${paramIndex}.
-
-                    params:${queryId}_${paramIndex}
-                        a sh:Parameter;
-                        sh:path paramPaths:${paramName};
-                        sh:description "${paramName}".
-                `);
-            }
-
-            for (const {id: lsqIdUnesc, bindings} of instances) {
-                const lsqId = escapeLsqId(lsqIdUnesc)
-                await this.outputGraphConnection.post(`
-                    queryGenerations:${queryId}_${lsqId}
-                        a  prvTypes:DataCreation;
-                        prv:usedGuideline templates:${queryId}.
-
-                    <${LSQ_QUERIES_PREFIX}${lsqIdUnesc}>
-                        a prvTypes:SPARQLQuery;
-                        prv:createdBy queryGenerations:${queryId}_${lsqId}.
+                await this.outputGraphConnection.post((
+                    parentQueryId ?
+                        `templates:${queryId} prov:specializationOf  templates:${parentQueryId}.` :
+                        // `templates:${queryId} prov:wasGeneratedBy actions:${actionId}.`) + `
+                        // `actions:${actionId} schema:result templates:${queryId}.
+                        this.options.cluster ?
+                            `templates:${queryId} prov:specializationOf <${this.options.cluster}>.` :
+                            this.options.dataset ?
+                                `templates:${queryId} dcterms:isPartOf <${this.options.dataset}>.` :
+                                `actions:${actionId} schema:result templates:${queryId}.`) + `
+                    templates:${queryId}
+                        a prvTypes:QueryTemplate, sh:Parametrizable;
+                        dcterms:identifier ${queryId};
+                        lsqv:text ${escapeLiteral(text)}.
                 `);
 
-                for (const [paramIndex, bindingValue] of bindings.entries()) {
-                    let rdfValue;
-                    try {
-                        rdfValue = rebaseTerm(bindingValue, mergePreambles(this.options.defaultPreamble, preamble));
-                    } catch(exception) {}
+                for (const paramIndex of instances[0].bindings.map(({}, paramIndex) => paramIndex)) {
+                    const paramName = generateParameterLabel(paramIndex).slice(1);
                     await this.outputGraphConnection.post(`
-                        queryGenerations:${queryId}_${lsqId} prv:usedData bindings:${lsqId}_${paramIndex}.
-                        bindings:${lsqId}_${paramIndex}
-                            a wfprov:Artifact;
-                            wfprov:describedByParameter params:${queryId}_${paramIndex};
-                            ${rdfValue ? `rdf:value ${rdfValue};` : ''}
-                            lsqv:text ${escapeLiteral(bindingValue)}. 
-                    `); // wfprov:usedInput
+                        templates:${queryId} sh:parameter params:${queryId}_${paramIndex}.
+
+                        params:${queryId}_${paramIndex}
+                            a sh:Parameter;
+                            sh:path paramPaths:${paramName};
+                            sh:description "${paramName}".
+                    `);
                 }
+
+                for (const {id: lsqIdUnesc, bindings} of instances) {
+                    const lsqId = escapeLsqId(lsqIdUnesc)
+                    await this.outputGraphConnection.post(`
+                        queryGenerations:${queryId}_${lsqId}
+                            a  prvTypes:DataCreation;
+                            prv:usedGuideline templates:${queryId}.
+
+                        <${LSQ_QUERIES_PREFIX}${lsqIdUnesc}>
+                            a prvTypes:SPARQLQuery;
+                            prv:createdBy queryGenerations:${queryId}_${lsqId}.
+                    `);
+
+                    for (const [paramIndex, bindingValue] of bindings.entries()) {
+                        let rdfValue;
+                        try {
+                            rdfValue = rebaseTerm(bindingValue, mergePreambles(this.options.defaultPreamble, preamble));
+                        } catch(exception) {}
+                        await this.outputGraphConnection.post(`
+                            queryGenerations:${queryId}_${lsqId} prv:usedData bindings:${lsqId}_${paramIndex}.
+                            bindings:${lsqId}_${paramIndex}
+                                a wfprov:Artifact;
+                                wfprov:describedByParameter params:${queryId}_${paramIndex};
+                                ${rdfValue ? `rdf:value ${rdfValue};` : ''}
+                                lsqv:text ${escapeLiteral(bindingValue)}. 
+                        `); // wfprov:usedInput
+                    }
+                }
+
+                await this.storeForest(specializations, queryId);
             }
-
-            await this.storeForest(specializations, queryId);
         }
-
 
     }
 
     async linkSingleQueries(queryLsqIds, actionId) {
 
-        for (const lsqId of queryLsqIds) {
-            var queryTurtle = `
-            actions:${actionId} schema:result <${LSQ_QUERIES_PREFIX}${lsqId}>.
-            ${this.options.cluster ?
-                `<${this.options.cluster}> rdfs:member <${LSQ_QUERIES_PREFIX}${lsqId}>.` :
-                this.options.dataset ?
-                    `<${this.options.dataset}> rdfs:member <${LSQ_QUERIES_PREFIX}${lsqId}> .` :
-                    `actions:${actionId} schema:result <${LSQ_QUERIES_PREFIX}${lsqId}>.`}
-            <${LSQ_QUERIES_PREFIX}${lsqId}> a prvTypes:SPARQLQuery.
-            `;
-            this.outputGraphConnection.post(queryTurtle);
+        if (this.outputGraphConnection) {
+            for (const lsqId of queryLsqIds) {
+                var queryTurtle = `
+                actions:${actionId} schema:result <${LSQ_QUERIES_PREFIX}${lsqId}>.
+                ${this.options.cluster ?
+                    `<${this.options.cluster}> rdfs:member <${LSQ_QUERIES_PREFIX}${lsqId}>.` :
+                    this.options.dataset ?
+                        `<${this.options.dataset}> rdfs:member <${LSQ_QUERIES_PREFIX}${lsqId}> .` :
+                        `actions:${actionId} schema:result <${LSQ_QUERIES_PREFIX}${lsqId}>.`}
+                <${LSQ_QUERIES_PREFIX}${lsqId}> a prvTypes:SPARQLQuery.
+                `;
+                this.outputGraphConnection.post(queryTurtle);
+            }
         }
-
 
     }
 
@@ -254,17 +258,20 @@ export default class ParametricQueriesStorage {
                 numOfInstances: totalQueries,
                 numOfExecutions: totalExecutions,
                 timeOfFirstExecution, timeOfLastExecution,
+                sumOfLogOfNumOfExecutions: 0,
                 numOfSpecializations: nonClusterizedQueryIds ? nonClusterizedQueryIds.length : 0
             })
         }
         queryForest.map(({
             text, numOfInstances, numOfExecutions,
             timeOfFirstExecution, timeOfLastExecution,
+            sumOfLogOfNumOfExecutions,
             specializations
         }, queryIndex) => ({
             queryId: queryIndex + 1, text,
             numOfInstances, numOfExecutions,
             timeOfFirstExecution, timeOfLastExecution,
+            sumOfLogOfNumOfExecutions,
             numOfSpecializations: specializations.length
         })).sort((a, b) => b.numOfExecutions - a.numOfExecutions).forEach(queryStats => {
             queryStatsStream.push(queryStats);
@@ -278,7 +285,9 @@ export default class ParametricQueriesStorage {
             metadataUpdateURL, metadataGraphname = null
         } = this.options
     
-        await this.outputGraphConnection.sync();
+        if (this.outputGraphConnection) {
+            await this.outputGraphConnection.sync();
+        }
 
         const outputGraphId = encodeURIComponent(outputGraphStoreURL) + (outputGraphname ? '_' + encodeURIComponent(outputGraphname) : '')
         const outputGraphStoreId = encodeURIComponent(outputGraphStoreURL)
@@ -319,9 +328,11 @@ export default class ParametricQueriesStorage {
             metadataUpdateURL, metadataGraphname = null
         } = this.options
     
-        try {
-            await this.outputGraphConnection.sync();
-        } catch(e) {}
+        if (this.outputGraphConnection) {
+            try {
+                await this.outputGraphConnection.sync();
+            } catch(e) {}
+        }
 
         const metadataUpdate = this.metadataPreamble + `
         DELETE DATA {
