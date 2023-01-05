@@ -1,0 +1,10 @@
+PREFIX lsqv: <http://lsq.aksw.org/vocab#>
+
+SELECT DISTINCT
+    ?id ?text
+WHERE {
+    GRAPH $dataset {
+        ?query lsqv:hash ?id;
+            lsqv:text ?text.
+    }
+}

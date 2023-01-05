@@ -1,0 +1,22 @@
+PREFIX lsqv: <http://lsq.aksw.org/vocab#>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+
+SELECT #DISTINCT
+    ?id ?text
+    (COUNT(?exec) AS ?numOfExecutions)
+    (MIN(?execTime) AS ?timeOfFirstExecution)
+    (MAX(?execTime) AS ?timeOfLastExecution)
+    #(COUNT(DISTINCT ?host) AS ?numOfHosts)
+WHERE {
+    GRAPH <http://lsq.aksw.org/datasets/bio2rdf/queries> {
+        ?query lsqv:hash ?id;
+            lsqv:text ?text.
+    }
+    GRAPH <http://lsq.aksw.org/datasets/bio2rdf/execs> {
+        ?query lsqv:hasRemoteExec ?exec.
+        ?exec prov:atTime ?execTime.
+    }
+#    ?exec lsqv:hostHash ?host.
+}
+GROUP BY ?id ?text
+#LIMIT 25

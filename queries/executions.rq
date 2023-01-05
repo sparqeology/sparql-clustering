@@ -2,31 +2,13 @@ PREFIX lsqr: <http://lsq.aksw.org/>
 PREFIX lsqv: <http://lsq.aksw.org/vocab#>
 PREFIX prov: <http://www.w3.org/ns/prov#>
 
-# Query: outgoing 
-#
-# lsqv:text
-# lsqv:hash
-# lsqv:hasLocalExec
-# lsqv:hasSpin
-# lsqv:hasRemoteExec
-# lsqv:hasStructuralFeatures
-
-# Query: ingoing 
-#
-# lsqv:extensionQuery
-
-# Exec: outgoing 
-#
-# prov:atTime
-# lsqv:endpoint
-# lsqv:hostHash
-# lsqv:uri
 
 SELECT ?queryId ?time ?host
 WHERE {
-  ?query lsqv:hash ?queryId;
-         lsqv:hasRemoteExec ?exec.
-  ?exec prov:atTime ?time.
-  OPTIONAL {?exec lsqv:hostHash ?host}
- }
-#LIMIT 25
+       GRAPH $dataset {
+              ?query lsqv:hash ?queryId;
+                     lsqv:hasRemoteExec ?exec.
+              ?exec prov:atTime ?time.
+              OPTIONAL {?exec lsqv:hostHash ?host}
+       }
+}
