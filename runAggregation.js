@@ -109,9 +109,18 @@ export default async function runAggregation(options) {
         const storage = new ParametricQueriesStorage(options)
         const actionId = await storage.recordProcessStart();
         try {
-            const queries = queryEndpoint(
-                options.inputEndpointURL, options.inputGraphnames,
-                options.cluster ? queriesOfClusterQuery.replaceAll('?cluster', `<${options.cluster}>`) : queriesQuery);
+            let queries;
+            if (options.queriesCsvDirPath) {
+                const queriesCsvPath = `${options.queriesCsvDirPath}/${options.datasetId}.csv`;
+                queries = fs.createReadStream(queriesCsvPath).pipe(parse({
+                    columns: true,
+                    cast: (value, {column}) => (column === 'numOfExecutions' ? parseInt(value) : value)
+                }));
+            } else {
+                queries = queryEndpoint(
+                    options.inputEndpointURL, options.inputGraphnames,
+                    options.cluster ? queriesOfClusterQuery.replaceAll('?cluster', `<${options.cluster}>`) : queriesQuery);
+            }
             const result = await aggregateAndSpecialize(queries, options);
             console.time('storeResults');
             await storage.storeForest(result.queryForest, null, actionId);
@@ -181,6 +190,7 @@ async function test() {
         resourcesNs: 'http://sparql-clustering.org/',
         // datasetsGraphname: 'http://lsq.aksw.org/datasets',
         datasetsCsvPath: './input/datasets.csv',
+        queriesCsvDirPath: './input/queries',
         // clustersGraphname: 'http://lsq.aksw.org/clustering/v1',
         // format: 'application/n-quads'
         // cluster: 'http://lsq.aksw.org/datasets/bench-dbpedia-20151126-lsq2/clusters/1',
@@ -236,7 +246,7 @@ async function test() {
             'http://lsq.aksw.org/datasets/bench-wikidata-interval6-organic-lsq2',
             'http://lsq.aksw.org/datasets/bench-wikidata-interval7-organic-lsq2',
             // 'http://lsq.aksw.org/datasets/dbpedia',
-            'http://lsq.aksw.org/datasets/bio2rdf',
+            // 'http://lsq.aksw.org/datasets/bio2rdf',
             // 'http://lsq.aksw.org/datasets/dbpedia-2015',
             'http://lsq.aksw.org/datasets/wikidata',
         ]
