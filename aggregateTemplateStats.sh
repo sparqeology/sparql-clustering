@@ -31,7 +31,7 @@ for FILE_PATH in $1/*.csv; do
 
         entropyPartB += numOfExecutions * log(numOfExecutions);
 
-        infoGainPart += numOfExecutions * (numOfInstances * numOfExecutions - sumOfLogOfNumOfExecutions);
+        infoGainPart += numOfExecutions * (numOfInstances * log(numOfExecutions) - sumOfLogOfNumOfExecutions);
 
         if (timeOfFirstExecution < begin) {
            begin = timeOfFirstExecution;
