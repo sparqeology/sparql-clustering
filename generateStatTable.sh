@@ -33,9 +33,9 @@ awk 'BEGIN { FS=","; OFS=","; } {print $1,$2}' <(tail -n +2 "$STATS_DIR/hostStat
     entropyForTemplates = 0 + $12;
     informationGain = 0 + $13;
 
-    if (NR > 1) {
-        print "\\\\";
-    }
+    # if (NR > 1) {
+    #     print "\\\\";
+    # }
 
     row = "{" label "}{" numOfQueries "}{" numOfExecutions "}{" entropyForQueries "}{" numOfHosts  "}{" numOfTemplates "}{" entropyForTemplates "}{" informationGain "}";
     if (level == "1") {
