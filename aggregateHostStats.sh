@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "dataset,numOfHosts,numOfExecutions,begin,end,entropy"
+echo "dataset,numOfHosts,numOfExecutions,begin,end,entropyForHosts"
 
 for FILE_PATH in $1/*.csv; do
     DATASET_NAME=`basename $FILE_PATH .csv`
