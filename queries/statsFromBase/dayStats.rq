@@ -1,0 +1,21 @@
+PREFIX lsqv: <http://lsq.aksw.org/vocab#>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT
+    ?date
+    (COUNT(?exec) AS ?numOfExecutions)
+    (COUNT(DISTINCT ?query) AS ?numOfQueries)
+    (COUNT(DISTINCT ?host) AS ?numOfHosts)
+    (MIN(?execTime) AS ?timeOfFirstExecution)
+    (MAX(?execTime) AS ?timeOfLastExecution)
+WHERE {
+    GRAPH <execs> {
+        ?query lsqv:hasRemoteExec ?exec.
+        ?exec prov:atTime ?execTime.
+        ?exec lsqv:hostHash ?host.
+    }
+    BIND(xsd:date(?execTime) AS ?date)
+}
+GROUP BY ?date
+ORDER BY ?date
