@@ -1,8 +1,11 @@
 #!/bin/bash
 
-echo "dataset,numOfTemplates,numOfQueries,numOfExecutions,begin,end,entropyWithTemplates,eS,eC,eA,eD,qS,qC,qA,qD,tS,tC,tA,tD,eS%,eC%,eA%,eD%,qS%,qC%,qA%,qD%,tS%,tC%,tA%,tD%"
+INPUT_DIR="./output/rootTemplates-all/stats"
+OUTPUT_FILE="./output/general/stats/templateStats.csv"
 
-for FILE_PATH in $1/*.csv; do
+echo "dataset,numOfTemplates,numOfQueries,numOfExecutions,begin,end,entropyWithTemplates,eS,eC,eA,eD,qS,qC,qA,qD,tS,tC,tA,tD,eS%,eC%,eA%,eD%,qS%,qC%,qA%,qD%,tS%,tC%,tA%,tD%,maxNumOfOriginalRdfTerms,avgNumOfOriginalRdfTermsByQuery,avgNumOfOriginalRdfTermsByTemplate,maxNumOfParameters,avgNumOfParametersByQuery,avgNumOfParametersByTemplate" >"$OUTPUT_FILE"
+
+for FILE_PATH in $INPUT_DIR/*.csv; do
     DATASET_NAME=`basename $FILE_PATH .csv`
     tail -n +3 "$FILE_PATH" | csvquote | awk '
     BEGIN {
@@ -26,6 +29,12 @@ for FILE_PATH in $1/*.csv; do
             totNumOfTemplatesByType[queryType] = 0;
             totNumOfExecutionsByType[queryType] = 0;
         }
+        totWeightedNumOfOriginalRdfTerms = 0;
+        totNumOfOriginalRdfTerms = 0;
+        totWeightedNumOfParameters = 0;
+        totNumOfParameters = 0;
+        maxNumOfOriginalRdfTerms = 0;
+        maxNumOfParameters = 0;
     }
     {
         id = $1;
@@ -36,10 +45,24 @@ for FILE_PATH in $1/*.csv; do
         timeOfLastExecution = $6;
         sumOfLogOfNumOfExecutions = $7;
         numOfSpecializations = $8;
+        numOfOriginalRdfTerms = $9;
+        numOfParameters = $10;
 
         totNumOfExecutions += numOfExecutions;
         totNumOfQueries += numOfInstances;
         totNumOfTemplates++;
+
+        totWeightedNumOfOriginalRdfTerms += numOfOriginalRdfTerms * numOfInstances;
+        totNumOfOriginalRdfTerms += numOfOriginalRdfTerms;
+        totWeightedNumOfParameters += numOfParameters * numOfInstances;
+        totNumOfParameters += numOfParameters;
+
+        if (numOfOriginalRdfTerms > maxNumOfOriginalRdfTerms) {
+            maxNumOfOriginalRdfTerms = numOfOriginalRdfTerms;
+        }
+        if (numOfParameters > maxNumOfParameters) {
+            maxNumOfParameters = numOfParameters;
+        }
 
         entropyPartB += numOfExecutions * log(numOfExecutions);
 
@@ -78,6 +101,12 @@ for FILE_PATH in $1/*.csv; do
         entropy = (log(totNumOfExecutions) - entropyPartB/totNumOfExecutions)/log(2); 
         infoGain = infoGainPart / totNumOfExecutions;
 
+        avgNumOfOriginalRdfTermsByQuery = totWeightedNumOfOriginalRdfTerms / totNumOfQueries;
+        avgNumOfOriginalRdfTermsByTemplate = totNumOfOriginalRdfTerms / totNumOfTemplates;
+        avgNumOfParametersByQuery = totWeightedNumOfParameters / totNumOfQueries;
+        avgNumOfParametersByTemplate = totNumOfParameters / totNumOfTemplates;
+
+
         numOfExecutionsByTypeVector = "";
         numOfQueriesByTypeVector = "";
         numOfTemplatesByTypeVector = "";
@@ -95,6 +124,6 @@ for FILE_PATH in $1/*.csv; do
         }
         typeVector = substr(numOfExecutionsByTypeVector,2) numOfQueriesByTypeVector numOfTemplatesByTypeVector percOfExecutionsByTypeVector percOfQueriesByTypeVector percOfTemplatesByTypeVector;
 
-        print dataset,totNumOfTemplates,totNumOfQueries,totNumOfExecutions,begin,end,entropy,typeVector;
-    }' "dataset=$DATASET_NAME"
+        print dataset,totNumOfTemplates,totNumOfQueries,totNumOfExecutions,begin,end,entropy,typeVector,maxNumOfOriginalRdfTerms,avgNumOfOriginalRdfTermsByQuery,avgNumOfOriginalRdfTermsByTemplate,maxNumOfParameters,avgNumOfParametersByQuery,avgNumOfParametersByTemplate;
+    }' "dataset=$DATASET_NAME" >>"$OUTPUT_FILE"
 done

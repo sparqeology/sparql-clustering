@@ -259,20 +259,25 @@ export default class ParametricQueriesStorage {
                 numOfExecutions: totalExecutions,
                 timeOfFirstExecution, timeOfLastExecution,
                 sumOfLogOfNumOfExecutions: 0,
-                numOfSpecializations: nonClusterizedQueryIds ? nonClusterizedQueryIds.length : 0
+                numOfSpecializations: nonClusterizedQueryIds ? nonClusterizedQueryIds.length : 0,
+                numOfOriginalRdfTerms: 0,
+                numOfParameters: 0
             })
         }
         queryForest.map(({
             text, numOfInstances, numOfExecutions,
             timeOfFirstExecution, timeOfLastExecution,
             sumOfLogOfNumOfExecutions,
-            specializations
+            specializations,
+            instances
         }, queryIndex) => ({
             queryId: queryIndex + 1, text,
             numOfInstances, numOfExecutions,
             timeOfFirstExecution, timeOfLastExecution,
             sumOfLogOfNumOfExecutions,
-            numOfSpecializations: specializations.length
+            numOfSpecializations: specializations.length,
+            numOfOriginalRdfTerms: instances[0].numOfOriginalRdfTerms,
+            numOfParameters: instances[0].bindings.length
         })).sort((a, b) => b.numOfExecutions - a.numOfExecutions).forEach(queryStats => {
             queryStatsStream.push(queryStats);
         });

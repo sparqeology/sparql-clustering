@@ -49,6 +49,7 @@ export default async function aggregateAndSpecialize(queryStream, options = {}) 
         const queryStr = toString(generalizedQuery);
         const instance = {
             bindings: constants,
+            numOfOriginalRdfTerms : constants.length,
             ...queryData
         };
         if (paramQueryMap.has(queryStr)) {
