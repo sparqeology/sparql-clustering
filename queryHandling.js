@@ -127,26 +127,42 @@ export function pairParameters({queryPieces, parameterByPosition, preamble}, par
     return newQuery;
 }
 
-export function simplifyQueryBasic(parametricQuery, fromParameter = 0) {
-    const firstInstancebindings = parametricQuery.instances[0].bindings;
-    if (fromParameter >= firstInstancebindings.length) {
-        return parametricQuery;
-    }
-    const firstValue = firstInstancebindings[fromParameter];
-    let pairedParameter = fromParameter;
-    while ((pairedParameter = firstInstancebindings.indexOf(firstValue, pairedParameter + 1)) !== -1) {
-        if (parametricQuery.instances.every(({bindings}) => bindings[pairedParameter] === bindings[fromParameter])) {
-            return simplifyQueryBasic(
-                selectByPairedParameters(parametricQuery, fromParameter, pairedParameter, true),
-                fromParameter);
+
+export function simplifyQueryBasic(parametricQuery) {
+    let simplifiedParametricQuery = parametricQuery;
+    const bindingsToParam = new Map();
+    let outputParameterIndex = 0;
+    const {preamble, instances} = parametricQuery;
+    const numOfInputParameters = instances[0].bindings.length;
+    const paramsToRemove = new Set();
+
+    for (let inputParameterIndex = 0; inputParameterIndex < numOfInputParameters; inputParameterIndex++) {
+        const firstValue = instances[0].bindings[inputParameterIndex];
+
+        if (instances.every(({bindings}) => bindings[inputParameterIndex] === firstValue)) {
+            simplifiedParametricQuery = fixParameter(simplifiedParametricQuery, outputParameterIndex, firstValue);
+            paramsToRemove.add(inputParameterIndex);
+        } else {
+            const bindingsStr = JSON.stringify(instances.map(({bindings}) => bindings[inputParameterIndex]));
+            if (bindingsToParam.has(bindingsStr)) {
+                simplifiedParametricQuery = pairParameters(simplifiedParametricQuery, bindingsToParam.get(bindingsStr), outputParameterIndex);
+                paramsToRemove.add(inputParameterIndex);
+            } else {
+                bindingsToParam.set(bindingsStr, outputParameterIndex);
+                outputParameterIndex++;
+            }
         }
+
     }
-    if (parametricQuery.instances.every(({bindings}) => bindings[fromParameter] === firstValue)) {
-        return simplifyQueryBasic(
-            selectByParameterValue(parametricQuery, fromParameter, firstValue, true),
-            fromParameter);
+    return {
+        ...simplifiedParametricQuery,
+        preamble,
+        instances: instances.map(({bindings, ...instanceData}) => ({
+            bindings: bindings.filter((value, parameterIndex) => !(paramsToRemove.has(parameterIndex))),
+            ...instanceData
+        }))
     }
-    return simplifyQueryBasic(parametricQuery, fromParameter + 1);
+
 }
 
 function selectByParameterValue({queryPieces, parameterByPosition, preamble, instances}, parameter, value, skipFilter = false) {
@@ -252,7 +268,7 @@ export function generateSpecializations(parametricQuery, fromParameter, options 
 
 export function simplifyAndGenerateSpecializations(parametricQuery, fromParameter, options = {}) {
     const simplifiedQuery = simplifyQueryBasic(parametricQuery);
-    if (fromParameter >= parametricQuery.instances[0].bindings.length) {
+    if (!options.generalizationTree || fromParameter >= parametricQuery.instances[0].bindings.length) {
         return {
             ...simplifiedQuery,
             specializations: []
