@@ -1,0 +1,527 @@
+Dataset: http://lsq.aksw.org/datasets/dbpedia
+create generalization dictionary: 33:07.275 (m:ss.mmm)
+4257903 queries managed
+build specialization forest: 35.896s
+17715 specialization trees built
+aggregating instances: 1.821s
+queries as text: 140.796ms
+storeResults: 1:57:11.687 (h:mm:ss.mmm)
+storeStats: 11.117ms
+aggregation: 2:30:57.044 (h:mm:ss.mmm)
+
+Dataset: http://lsq.aksw.org/datasets/bio2rdf
+create generalization dictionary: 8:44.175 (m:ss.mmm)
+1899027 queries managed
+build specialization forest: 6.074s
+12296 specialization trees built
+aggregating instances: 703.042ms
+queries as text: 71.101ms
+storeResults: 22:11.404 (m:ss.mmm)
+storeStats: 12.048ms
+aggregation: 31:02.635 (m:ss.mmm)
+
+Dataset: http://lsq.aksw.org/datasets/wikidata
+create generalization dictionary: 10:05.839 (m:ss.mmm)
+844260 queries managed
+build specialization forest: 12.267s
+167578 specialization trees built
+aggregating instances: 1.292s
+queries as text: 1.274s
+storeResults: 6:48.050 (m:ss.mmm)
+storeStats: 61.771ms
+aggregation: 17:08.977 (m:ss.mmm)
+
+Dataset: http://lsq.aksw.org/datasets/dbpedia-2015
+create generalization dictionary: 25:20.048 (m:ss.mmm)
+3903734 queries managed
+build specialization forest: 32.444s
+15808 specialization trees built
+aggregating instances: 2.134s
+queries as text: 202.415ms
+storeResults: 1:39:28.036 (h:mm:ss.mmm)
+storeStats: 7.84ms
+aggregation: 2:05:23.053 (h:mm:ss.mmm)
+
+Dataset: http://lsq.aksw.org/datasets/bench-affymetrix-lsq2
+create generalization dictionary: 1:59.637 (m:ss.mmm)
+311096 queries managed
+build specialization forest: 49.743ms
+777 specialization trees built
+aggregating instances: 71.744ms
+queries as text: 4.319ms
+storeResults: 2:03.660 (m:ss.mmm)
+storeStats: 1.675ms
+aggregation: 4:03.617 (m:ss.mmm)
+
+Dataset: http://lsq.aksw.org/datasets/bench-biomedels-lsq2
+create generalization dictionary: 2:40.876 (m:ss.mmm)
+435232 queries managed
+build specialization forest: 449.429ms
+517 specialization trees built
+aggregating instances: 134.768ms
+queries as text: 2.525ms
+storeResults: 3:31.852 (m:ss.mmm)
+storeStats: 1.727ms
+aggregation: 6:13.468 (m:ss.mmm)
+
+Dataset: http://lsq.aksw.org/datasets/bench-bioportal-lsq2
+create generalization dictionary: 55.122s
+89664 queries managed
+build specialization forest: 58.963ms
+198 specialization trees built
+aggregating instances: 29.69ms
+queries as text: 1.438ms
+storeResults: 57.463s
+storeStats: 1.182ms
+aggregation: 1:52.831 (m:ss.mmm)
+
+Dataset: http://lsq.aksw.org/datasets/bench-ctd-lsq2
+create generalization dictionary: 1:39.383 (m:ss.mmm)
+287296 queries managed
+build specialization forest: 29.186ms
+1143 specialization trees built
+aggregating instances: 61.265ms
+queries as text: 4.65ms
+storeResults: 1:53.324 (m:ss.mmm)
+storeStats: 2.084ms
+aggregation: 3:32.965 (m:ss.mmm)
+
+Dataset: http://lsq.aksw.org/datasets/bench-dbpedia-20151025-lsq2
+create generalization dictionary: 2:57.323 (m:ss.mmm)
+255405 queries managed
+build specialization forest: 2.000s
+909 specialization trees built
+aggregating instances: 66.127ms
+queries as text: 5.283ms
+storeResults: 3:35.313 (m:ss.mmm)
+storeStats: 0.992ms
+aggregation: 6:34.875 (m:ss.mmm)
+
+Dataset: http://lsq.aksw.org/datasets/bench-dbpedia-20151124-lsq2
+create generalization dictionary: 1:15.481 (m:ss.mmm)
+204510 queries managed
+build specialization forest: 491.024ms
+856 specialization trees built
+aggregating instances: 47.87ms
+queries as text: 4.796ms
+storeResults: 2:33.251 (m:ss.mmm)
+storeStats: 1.173ms
+aggregation: 3:49.453 (m:ss.mmm)
+
+Dataset: http://lsq.aksw.org/datasets/bench-dbpedia-20151126-lsq2
+create generalization dictionary: 1:41.063 (m:ss.mmm)
+136416 queries managed
+build specialization forest: 1.194s
+2317 specialization trees built
+aggregating instances: 36.879ms
+queries as text: 13.48ms
+storeResults: 1:58.236 (m:ss.mmm)
+storeStats: 2.705ms
+aggregation: 3:40.715 (m:ss.mmm)
+
+Dataset: http://lsq.aksw.org/datasets/bench-dbpedia-20151213-lsq2
+create generalization dictionary: 3:15.646 (m:ss.mmm)
+225493 queries managed
+build specialization forest: 2.876s
+1581 specialization trees built
+aggregating instances: 61.505ms
+queries as text: 8.766ms
+storeResults: 2:34.711 (m:ss.mmm)
+storeStats: 2.177ms
+aggregation: 5:53.472 (m:ss.mmm)
+
+Dataset: http://lsq.aksw.org/datasets/bench-dbpedia-20151230-lsq2
+create generalization dictionary: 4:42.912 (m:ss.mmm)
+542864 queries managed
+build specialization forest: 2.809s
+1596 specialization trees built
+aggregating instances: 138.237ms
+queries as text: 8.129ms
+storeResults: 9:21.529 (m:ss.mmm)
+storeStats: 2.574ms
+aggregation: 14:07.570 (m:ss.mmm)
+
+Dataset: http://lsq.aksw.org/datasets/bench-dbpedia-20160117-lsq2
+create generalization dictionary: 1:46.452 (m:ss.mmm)
+142324 queries managed
+build specialization forest: 1.144s
+1033 specialization trees built
+aggregating instances: 36.146ms
+queries as text: 6.053ms
+storeResults: 1:58.664 (m:ss.mmm)
+storeStats: 2.013ms
+aggregation: 3:46.479 (m:ss.mmm)
+
+Dataset: http://lsq.aksw.org/datasets/bench-dbpedia-20160212-lsq2
+create generalization dictionary: 4:20.262 (m:ss.mmm)
+488580 queries managed
+build specialization forest: 2.677s
+2315 specialization trees built
+aggregating instances: 132.887ms
+queries as text: 14.669ms
+storeResults: 6:57.904 (m:ss.mmm)
+storeStats: 2.743ms
+aggregation: 11:21.164 (m:ss.mmm)
+
+Dataset: http://lsq.aksw.org/datasets/bench-dbpedia-20160222-lsq2
+create generalization dictionary: 2:09.783 (m:ss.mmm)
+427822 queries managed
+build specialization forest: 1.018s
+1136 specialization trees built
+aggregating instances: 116.266ms
+queries as text: 6.272ms
+storeResults: 4:42.686 (m:ss.mmm)
+storeStats: 1.488ms
+aggregation: 6:53.787 (m:ss.mmm)
+
+Dataset: http://lsq.aksw.org/datasets/bench-dbpedia-20160301-lsq2
+create generalization dictionary: 4:25.600 (m:ss.mmm)
+561414 queries managed
+build specialization forest: 2.774s
+2884 specialization trees built
+aggregating instances: 169.746ms
+queries as text: 17.349ms
+storeResults: 7:06.786 (m:ss.mmm)
+storeStats: 2.583ms
+aggregation: 11:35.514 (m:ss.mmm)
+
+Dataset: http://lsq.aksw.org/datasets/bench-dbpedia-20160303-lsq2
+create generalization dictionary: 4:34.446 (m:ss.mmm)
+575774 queries managed
+build specialization forest: 3.541s
+2942 specialization trees built
+aggregating instances: 189.731ms
+queries as text: 20.472ms
+storeResults: 7:23.460 (m:ss.mmm)
+storeStats: 3.892ms
+aggregation: 12:01.829 (m:ss.mmm)
+Dataset: http://lsq.aksw.org/datasets/bench-dbpedia-20160304-lsq2
+create generalization dictionary: 2:17.701 (m:ss.mmm)
+244309 queries managed
+build specialization forest: 1.287s
+2207 specialization trees built
+aggregating instances: 65.01ms
+queries as text: 13.594ms
+storeResults: 3:21.134 (m:ss.mmm)
+storeStats: 2.591ms
+aggregation: 5:40.381 (m:ss.mmm)
+Dataset: http://lsq.aksw.org/datasets/bench-dbpedia-20160314-lsq2
+create generalization dictionary: 3:12.816 (m:ss.mmm)
+527987 queries managed
+build specialization forest: 913.086ms
+976 specialization trees built
+aggregating instances: 145.807ms
+queries as text: 5.107ms
+storeResults: 9:13.627 (m:ss.mmm)
+storeStats: 1.849ms
+aggregation: 12:27.679 (m:ss.mmm)
+Dataset: http://lsq.aksw.org/datasets/bench-dbpedia-20160411-lsq2
+create generalization dictionary: 2:44.862 (m:ss.mmm)
+198877 queries managed
+build specialization forest: 1.489s
+1342 specialization trees built
+aggregating instances: 46.839ms
+queries as text: 8.301ms
+storeResults: 5:53.540 (m:ss.mmm)
+storeStats: 2.296ms
+aggregation: 8:40.120 (m:ss.mmm)
+Dataset: http://lsq.aksw.org/datasets/bench-dbpedia.3.5.1.log-lsq2
+create generalization dictionary: 3:44.983 (m:ss.mmm)
+358955 queries managed
+build specialization forest: 2.013s
+2223 specialization trees built
+aggregating instances: 98.402ms
+queries as text: 14.192ms
+storeResults: 5:20.041 (m:ss.mmm)
+storeStats: 2.521ms
+aggregation: 9:07.324 (m:ss.mmm)
+Dataset: http://lsq.aksw.org/datasets/bench-dbsnp-lsq2
+create generalization dictionary: 1:48.961 (m:ss.mmm)
+269498 queries managed
+build specialization forest: 16.229ms
+192 specialization trees built
+aggregating instances: 68.007ms
+queries as text: 0.816ms
+storeResults: 1:35.957 (m:ss.mmm)
+storeStats: 1.27ms
+aggregation: 3:25.178 (m:ss.mmm)
+Dataset: http://lsq.aksw.org/datasets/bench-drugbank-lsq2
+create generalization dictionary: 3:01.453 (m:ss.mmm)
+379234 queries managed
+build specialization forest: 338.852ms
+3873 specialization trees built
+aggregating instances: 110.768ms
+queries as text: 17.869ms
+storeResults: 2:46.855 (m:ss.mmm)
+storeStats: 2.611ms
+aggregation: 5:48.958 (m:ss.mmm)
+Dataset: http://lsq.aksw.org/datasets/bench-genage-lsq2
+create generalization dictionary: 1:38.348 (m:ss.mmm)
+265067 queries managed
+build specialization forest: 27.989ms
+215 specialization trees built
+aggregating instances: 40.969ms
+queries as text: 0.947ms
+storeResults: 1:32.121 (m:ss.mmm)
+storeStats: 1.268ms
+aggregation: 3:10.709 (m:ss.mmm)
+Dataset: http://lsq.aksw.org/datasets/bench-gendr-lsq2
+create generalization dictionary: 1:43.667 (m:ss.mmm)
+270697 queries managed
+build specialization forest: 29.451ms
+216 specialization trees built
+aggregating instances: 49.44ms
+queries as text: 0.913ms
+storeResults: 1:35.059 (m:ss.mmm)
+storeStats: 1.132ms
+aggregation: 3:18.983 (m:ss.mmm)
+Dataset: http://lsq.aksw.org/datasets/bench-gene-lsq2
+create generalization dictionary: 1:41.200 (m:ss.mmm)
+121542 queries managed
+build specialization forest: 116.091ms
+2360 specialization trees built
+aggregating instances: 33.514ms
+queries as text: 9.339ms
+storeResults: 1:01.881 (m:ss.mmm)
+storeStats: 2.599ms
+aggregation: 2:43.414 (m:ss.mmm)
+Dataset: http://lsq.aksw.org/datasets/bench-goa-lsq2
+create generalization dictionary: 3:33.235 (m:ss.mmm)
+343836 queries managed
+build specialization forest: 289.95ms
+612 specialization trees built
+aggregating instances: 77.45ms
+queries as text: 2.637ms
+storeResults: 2:55.751 (m:ss.mmm)
+storeStats: 1.668ms
+aggregation: 6:29.539 (m:ss.mmm)
+Dataset: http://lsq.aksw.org/datasets/bench-hgnc-lsq2
+create generalization dictionary: 2:34.558 (m:ss.mmm)
+364961 queries managed
+build specialization forest: 145.984ms
+808 specialization trees built
+aggregating instances: 92.032ms
+queries as text: 3.665ms
+storeResults: 2:30.674 (m:ss.mmm)
+storeStats: 1.821ms
+aggregation: 5:05.693 (m:ss.mmm)
+Dataset: http://lsq.aksw.org/datasets/bench-homologene-lsq2
+create generalization dictionary: 2:14.778 (m:ss.mmm)
+321061 queries managed
+build specialization forest: 42.678ms
+836 specialization trees built
+aggregating instances: 75.601ms
+queries as text: 3.296ms
+storeResults: 2:01.100 (m:ss.mmm)
+storeStats: 1.453ms
+aggregation: 4:16.178 (m:ss.mmm)
+Dataset: http://lsq.aksw.org/datasets/bench-irefindex-lsq2
+create generalization dictionary: 2:23.687 (m:ss.mmm)
+309777 queries managed
+build specialization forest: 131.643ms
+552 specialization trees built
+aggregating instances: 68.121ms
+queries as text: 2.151ms
+storeResults: 2:00.838 (m:ss.mmm)
+storeStats: 1.094ms
+aggregation: 4:24.898 (m:ss.mmm)
+Dataset: http://lsq.aksw.org/datasets/bench-kegg-lsq2
+create generalization dictionary: 7.310s
+19871 queries managed
+build specialization forest: 9.87ms
+474 specialization trees built
+aggregating instances: 3.019ms
+queries as text: 2.192ms
+storeResults: 11.506s
+storeStats: 1.384ms
+aggregation: 19.015s
+Dataset: http://lsq.aksw.org/datasets/bench-linkedGeoData-lsq2
+create generalization dictionary: 1:33.702 (m:ss.mmm)
+173043 queries managed
+build specialization forest: 405.076ms
+2748 specialization trees built
+aggregating instances: 49.896ms
+queries as text: 17.148ms
+storeResults: 1:00.940 (m:ss.mmm)
+storeStats: 2.958ms
+aggregation: 2:35.284 (m:ss.mmm)
+Dataset: http://lsq.aksw.org/datasets/bench-linkedspl-lsq2
+create generalization dictionary: 1:14.869 (m:ss.mmm)
+204112 queries managed
+build specialization forest: 0.991ms
+117 specialization trees built
+aggregating instances: 32.655ms
+queries as text: 0.527ms
+storeResults: 1:09.091 (m:ss.mmm)
+storeStats: 1.225ms
+aggregation: 2:24.163 (m:ss.mmm)
+Dataset: http://lsq.aksw.org/datasets/bench-mgi-lsq2
+create generalization dictionary: 2:16.899 (m:ss.mmm)
+319627 queries managed
+build specialization forest: 45.487ms
+702 specialization trees built
+aggregating instances: 71.345ms
+queries as text: 3.112ms
+storeResults: 1:57.730 (m:ss.mmm)
+storeStats: 1.693ms
+aggregation: 4:14.916 (m:ss.mmm)
+Dataset: http://lsq.aksw.org/datasets/bench-ncbigene-lsq2
+create generalization dictionary: 1:24.545 (m:ss.mmm)
+216832 queries managed
+build specialization forest: 12.58ms
+375 specialization trees built
+aggregating instances: 41.46ms
+queries as text: 1.568ms
+storeResults: 1:21.253 (m:ss.mmm)
+storeStats: 0.96ms
+aggregation: 2:46.067 (m:ss.mmm)
+Dataset: http://lsq.aksw.org/datasets/bench-omim-lsq2
+create generalization dictionary: 2:26.769 (m:ss.mmm)
+335541 queries managed
+build specialization forest: 119.579ms
+2579 specialization trees built
+aggregating instances: 84.719ms
+queries as text: 11.947ms
+storeResults: 2:15.044 (m:ss.mmm)
+storeStats: 2.711ms
+aggregation: 4:42.197 (m:ss.mmm)
+Dataset: http://lsq.aksw.org/datasets/bench-pharmgkb-lsq2
+create generalization dictionary: 12.012s
+24000 queries managed
+build specialization forest: 27.667ms
+154 specialization trees built
+aggregating instances: 2.8ms
+queries as text: 0.712ms
+storeResults: 9.634s
+storeStats: 1.24ms
+aggregation: 21.844s
+Dataset: http://lsq.aksw.org/datasets/bench-sabiork-lsq2
+create generalization dictionary: 1:48.189 (m:ss.mmm)
+274098 queries managed
+build specialization forest: 17.861ms
+313 specialization trees built
+aggregating instances: 47.163ms
+queries as text: 1.366ms
+storeResults: 1:36.959 (m:ss.mmm)
+storeStats: 0.864ms
+aggregation: 3:25.384 (m:ss.mmm)
+Dataset: http://lsq.aksw.org/datasets/bench-sgd-lsq2
+create generalization dictionary: 2:16.915 (m:ss.mmm)
+318641 queries managed
+build specialization forest: 140.854ms
+972 specialization trees built
+aggregating instances: 77.068ms
+queries as text: 4.351ms
+storeResults: 2:19.028 (m:ss.mmm)
+storeStats: 1.057ms
+aggregation: 4:36.335 (m:ss.mmm)
+Dataset: http://lsq.aksw.org/datasets/bench-sidr-lsq2
+create generalization dictionary: 1:42.467 (m:ss.mmm)
+277766 queries managed
+build specialization forest: 23.602ms
+455 specialization trees built
+aggregating instances: 50.352ms
+queries as text: 1.865ms
+storeResults: 1:44.896 (m:ss.mmm)
+storeStats: 0.96ms
+aggregation: 3:27.603 (m:ss.mmm)
+Dataset: http://lsq.aksw.org/datasets/bench-swdf-lsq2
+create generalization dictionary: 1:22.401 (m:ss.mmm)
+101422 queries managed
+build specialization forest: 396.838ms
+1826 specialization trees built
+aggregating instances: 31.405ms
+queries as text: 10.011ms
+storeResults: 10:48.438 (m:ss.mmm)
+storeStats: 2.716ms
+aggregation: 12:11.480 (m:ss.mmm)
+Dataset: http://lsq.aksw.org/datasets/bench-taxonomy-lsq2
+create generalization dictionary: 4:57.408 (m:ss.mmm)
+354582 queries managed
+build specialization forest: 139.305ms
+409 specialization trees built
+aggregating instances: 201.872ms
+queries as text: 2.616ms
+storeResults: 2:42.190 (m:ss.mmm)
+storeStats: 1.445ms
+aggregation: 7:40.111 (m:ss.mmm)
+Dataset: http://lsq.aksw.org/datasets/bench-wikidata-interval1-organic-lsq2
+create generalization dictionary: 1:01.590 (m:ss.mmm)
+86327 queries managed
+build specialization forest: 698.355ms
+27914 specialization trees built
+aggregating instances: 251.1ms
+queries as text: 153.144ms
+storeResults: 23.524s
+storeStats: 9.975ms
+aggregation: 1:26.409 (m:ss.mmm)
+Dataset: http://lsq.aksw.org/datasets/bench-wikidata-interval2-organic-lsq2
+create generalization dictionary: 1:02.428 (m:ss.mmm)
+88419 queries managed
+build specialization forest: 654.305ms
+27559 specialization trees built
+aggregating instances: 234.412ms
+queries as text: 154.431ms
+storeResults: 23.540s
+storeStats: 11.189ms
+aggregation: 1:27.186 (m:ss.mmm)
+Dataset: http://lsq.aksw.org/datasets/bench-wikidata-interval3-organic-lsq2
+create generalization dictionary: 1:13.190 (m:ss.mmm)
+93165 queries managed
+build specialization forest: 689.329ms
+22440 specialization trees built
+aggregating instances: 211.02ms
+queries as text: 122.998ms
+storeResults: 31.238s
+storeStats: 8.233ms
+aggregation: 1:45.617 (m:ss.mmm)
+Dataset: http://lsq.aksw.org/datasets/bench-wikidata-interval4-organic-lsq2
+create generalization dictionary: 1:30.472 (m:ss.mmm)
+119259 queries managed
+build specialization forest: 811.169ms
+27510 specialization trees built
+aggregating instances: 95.367ms
+queries as text: 153.308ms
+storeResults: 34.458s
+storeStats: 9.412ms
+aggregation: 2:06.159 (m:ss.mmm)
+Dataset: http://lsq.aksw.org/datasets/bench-wikidata-interval5-organic-lsq2
+create generalization dictionary: 1:46.923 (m:ss.mmm)
+141121 queries managed
+build specialization forest: 1.434s
+26993 specialization trees built
+aggregating instances: 104.279ms
+queries as text: 152.9ms
+storeResults: 45.482s
+storeStats: 9.216ms
+aggregation: 2:34.267 (m:ss.mmm)
+Dataset: http://lsq.aksw.org/datasets/bench-wikidata-interval6-organic-lsq2
+create generalization dictionary: 3:17.713 (m:ss.mmm)
+239182 queries managed
+build specialization forest: 3.818s
+30663 specialization trees built
+aggregating instances: 399.448ms
+queries as text: 178.241ms
+storeResults: 1:06.573 (m:ss.mmm)
+storeStats: 11.116ms
+aggregation: 4:28.861 (m:ss.mmm)
+Dataset: http://lsq.aksw.org/datasets/bench-wikidata-interval7-organic-lsq2
+create generalization dictionary: 2:10.692 (m:ss.mmm)
+183054 queries managed
+build specialization forest: 1.167s
+32534 specialization trees built
+aggregating instances: 340.846ms
+queries as text: 184.855ms
+storeResults: 45.330s
+storeStats: 16.627ms
+aggregation: 2:57.898 (m:ss.mmm)
+Dataset: http://lsq.aksw.org/datasets/bench-wormbase-lsq2
+create generalization dictionary: 3:49.683 (m:ss.mmm)
+498170 queries managed
+build specialization forest: 1.704s
+284 specialization trees built
+aggregating instances: 164.213ms
+queries as text: 1.319ms
+storeResults: 3:23.359 (m:ss.mmm)
+storeStats: 1.024ms
+aggregation: 7:15.081 (m:ss.mmm)

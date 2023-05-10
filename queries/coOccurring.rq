@@ -1,0 +1,48 @@
+PREFIX lsq: <http://lsq.aksw.org/vocab#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dcterms: <http://purl.org/dc/terms/>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+PREFIX prvt: <http://purl.org/net/provenance/types#>
+PREFIX prv: <http://purl.org/net/provenance/ns#>
+PREFIX lsqv: <http://lsq.aksw.org/vocab#>
+PREFIX templates: <http://sparql-clustering.org/templates/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT 
+    ?host
+    ?templateId1
+    ?templateId2
+    ?execTime1
+    ?execTime2
+#    (COUNT(?exec1) AS ?numExecs)
+WHERE {
+    GRAPH <http://lsq.aksw.org/datasets/bench-dbpedia.3.5.1.log-lsq2/execs> {
+        ?instance1 lsqv:hasRemoteExec ?exec1.
+        ?instance2 lsqv:hasRemoteExec ?exec2.
+        ?exec1
+            lsq:hostHash ?host;
+            prov:atTime ?execTime1.
+        ?exec2
+            lsq:hostHash ?host;
+            prov:atTime ?execTime2.
+        FILTER (STR(?instance2) > STR(?instance1)).
+        FILTER (STR(?exec2) > STR(?exec1)).
+        BIND (?execTime2 - ?execTime1 AS ?timeDiff)
+        FILTER (?timeDiff >= "-PT1H0M0.000S"^^xsd:dayTimeDuration && ?timeDiff <= "PT1H0M0.000S"^^xsd:dayTimeDuration).
+    }
+    GRAPH <http://lsq.aksw.org/datasets/bench-dbpedia.3.5.1/templates/10_execs> {
+        ?queryTemplate1
+            a prvt:QueryTemplate;
+            dcterms:identifier ?templateId1.
+        ?instance1 prv:createdBy/prv:usedGuideline ?queryTemplate1.
+        ?queryTemplate2
+            a prvt:QueryTemplate;
+            dcterms:identifier ?templateId2.
+        ?instance2 prv:createdBy/prv:usedGuideline ?queryTemplate2.
+        FILTER(?queryTemplate1 != ?queryTemplate2)
+#        FILTER(?templateId1 != ?templateId2)
+    }
+}
+#GROUP BY ?queryTemplate1 ?templateId1 ?queryTemplate2 ?templateId2
+#LIMIT 1000

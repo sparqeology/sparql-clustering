@@ -1,0 +1,19 @@
+PREFIX lsqv: <http://lsq.aksw.org/vocab#>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+
+CONSTRUCT {
+    ?query
+        lsqv:hash ?queryId;
+        lsqv:hasRemoteExec ?exec.
+    ?exec
+        prov:atTime ?time;
+        lsqv:hostHash ?host.
+}
+WHERE {
+    ?query
+        lsqv:hash ?queryId;
+#        lsqv:text ?text;
+        lsqv:hasRemoteExec ?exec.
+    OPTIONAL {?exec prov:atTime ?time}
+    OPTIONAL {?exec lsqv:hostHash ?host}
+}

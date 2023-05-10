@@ -28,7 +28,10 @@ export default class RdfFileStreamConnection {
 
     constructor(filePath, options = {}) {
         this.filePath = filePath;
+        this.currFilePath = filePath;
         this.options = options;
+        this.fileCounter = 0;
+        this.charCounter = 0.0;
     }
 
     getOutputStream() {
@@ -46,7 +49,7 @@ export default class RdfFileStreamConnection {
                 ntStream.pipe(zlib.createGzip()) :
                 ntStream;
             byteStream
-                .pipe(fs.createWriteStream(this.filePath, {
+                .pipe(fs.createWriteStream(this.currFilePath, {
                     flags: 'a'
                 }));
             this.outputStream = turtleParser;
@@ -62,6 +65,21 @@ export default class RdfFileStreamConnection {
     }
 
     async post(turtleStr) {
+        if (this.options.maxFileSize) {
+            this.charCounter += turtleStr.length;
+            if (this.charCounter > this.options.maxFileSize) {
+                await this.sync();
+                this.fileCounter++;
+                const filePathSteps = this.filePath.split('/');
+                const fileName = filePathSteps.pop();
+                const dirPath = filePathSteps.join('/') + '/';
+                const fileNameDotComponents = fileName.split('.');
+                const baseFileName = fileNameDotComponents.shift();
+                const extension = '.' + fileNameDotComponents.join('.');
+                this.currFilePath = dirPath + baseFileName + '_' + this.fileCounter + extension;
+                this.charCounter = 0;
+            }
+        }
         this.getOutputStream().write(turtleStr);
     }
 

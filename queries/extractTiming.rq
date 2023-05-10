@@ -1,0 +1,39 @@
+PREFIX lsq: <http://lsq.aksw.org/vocab#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dcterms: <http://purl.org/dc/terms/>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+PREFIX prvt: <http://purl.org/net/provenance/types#>
+PREFIX prv: <http://purl.org/net/provenance/ns#>
+PREFIX lsqv: <http://lsq.aksw.org/vocab#>
+PREFIX templates: <http://sparql-clustering.org/templates/>
+
+SELECT
+    ?templateId
+    ?host
+    ?execTime
+    (COUNT(DISTINCT ?instance) AS ?numInstances)
+    (COUNT(?exec) AS ?numExecutions)
+WHERE {
+    VALUES ?queryTemplate {
+        templates:7 templates:2 templates:8 templates:1 templates:21 
+        templates:31 templates:13 templates:14 templates:3 templates:12 
+        templates:51 templates:34 templates:56 templates:37 templates:82 
+        templates:5 templates:16 templates:81 templates:189 templates:42 
+    }.
+    GRAPH <http://lsq.aksw.org/datasets/dbpedia/templates/10_execs> {
+        ?queryTemplate
+        a prvt:QueryTemplate;
+        dcterms:identifier ?templateId.
+    #      lsqv:text ?templateText.
+        ?instance prv:createdBy/prv:usedGuideline ?queryTemplate.
+    }
+    GRAPH <http://lsq.aksw.org/datasets/dbpedia/execs> {
+        ?instance lsqv:hasRemoteExec ?exec.
+        OPTIONAL { ?exec lsq:hostHash ?host }.
+        OPTIONAL { ?exec prov:atTime ?execTime. }.
+    }
+}
+GROUP BY ?queryTemplate ?templateId ?host ?execTime
+#ORDER BY DESC(?numExecutions)
+#LIMIT 10

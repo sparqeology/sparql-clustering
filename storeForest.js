@@ -74,10 +74,9 @@ export default class ParametricQueriesStorage {
                 (options.compress ? '.gz' : '');
             this.outputGraphConnection = new RdfFileStreamConnection (
                 outputDirPath + outputFilename + '.' + extension, {
+                    ...options,
                     preamble: this.preamble,
-                    outputGraphname: outputGraphname,
-                    format: options.format,
-                    compress: options.compress
+                    outputGraphname: outputGraphname
                 }
             );
         }

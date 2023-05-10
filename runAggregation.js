@@ -172,7 +172,8 @@ async function test() {
         // minBindingDivergenceRatio: 0.05,
         asArray: true,
         // minNumOfInstances: 2,
-        // minNumOfExecutions: 3,
+        minNumOfExecutions: 10,
+        maxFileSize: 2**32,
         // minNumOfExecutionsForSimpleQueries: 3,
         // defaultPreamble: {
         //     prefixes: dbpediaPrefixes
@@ -180,7 +181,8 @@ async function test() {
         // showBindingDistributions: true
         inputEndpointURL: endpointURL, 
         // outputGraphStoreURL: graphStoreURL, 
-        // outputDirPath: './output/all/rdf/',
+        // outputDirPath: './output/rootTemplates-all/rdf/',
+        outputDirPath: './output/10_execs/rdf/',
         metadataUpdateURL: updateURL,
         // inputGraphnames: ['http://lsq.aksw.org/datasets/bench-dbpedia-20151126-lsq2'], //, 'http://lsq.aksw.org/clustering/v1'],
         // inputGraphnames: ['http://lsq.aksw.org/datasets/bench-affymetrix-lsq2'], //, 'http://lsq.aksw.org/clustering/v1'],
@@ -190,11 +192,12 @@ async function test() {
         resourcesNs: 'http://sparql-clustering.org/',
         // datasetsGraphname: 'http://lsq.aksw.org/datasets',
         datasetsCsvPath: './input/datasets.csv',
-        queriesCsvDirPath: './input/queries',
+        // queriesCsvDirPath: './input/queries',
         // clustersGraphname: 'http://lsq.aksw.org/clustering/v1',
         // format: 'application/n-quads'
         // cluster: 'http://lsq.aksw.org/datasets/bench-dbpedia-20151126-lsq2/clusters/1',
-        statsDirPath: './output/all/stats/topTemplates/withLogs/',
+        // statsDirPath: './output/rootTemplates-all/stats/',
+        statsDirPath: './output/10_execs/stats/',
         compress: true,
         // startFromDataset: 'http://lsq.aksw.org/datasets/bench-taxonomy-lsq2',
         excludeDatasets: [
@@ -232,7 +235,7 @@ async function test() {
             'http://lsq.aksw.org/datasets/bench-dbpedia-20160411-lsq2',
             'http://lsq.aksw.org/datasets/bench-linkedGeoData-lsq2',
             'http://lsq.aksw.org/datasets/bench-swdf-lsq2',
-            'http://lsq.aksw.org/datasets/bench-dbpedia.3.5.1.log-lsq2',
+            // 'http://lsq.aksw.org/datasets/bench-dbpedia.3.5.1.log-lsq2',
             'http://lsq.aksw.org/datasets/bench-dbpedia-20151213-lsq2',
             'http://lsq.aksw.org/datasets/bench-dbpedia-20151025-lsq2',
             'http://lsq.aksw.org/datasets/bench-dbpedia-20160304-lsq2',
@@ -245,9 +248,9 @@ async function test() {
             'http://lsq.aksw.org/datasets/bench-wikidata-interval5-organic-lsq2',
             'http://lsq.aksw.org/datasets/bench-wikidata-interval6-organic-lsq2',
             'http://lsq.aksw.org/datasets/bench-wikidata-interval7-organic-lsq2',
-            // 'http://lsq.aksw.org/datasets/dbpedia',
-            // 'http://lsq.aksw.org/datasets/bio2rdf',
-            // 'http://lsq.aksw.org/datasets/dbpedia-2015',
+            'http://lsq.aksw.org/datasets/dbpedia', 
+            'http://lsq.aksw.org/datasets/bio2rdf',
+            'http://lsq.aksw.org/datasets/dbpedia-2015',
             'http://lsq.aksw.org/datasets/wikidata',
         ]
 
