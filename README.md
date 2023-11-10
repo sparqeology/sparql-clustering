@@ -5,6 +5,8 @@ The method is described in a paper available [in the proceedings of ISWC 2023](h
 
 The results of the application on LSQ 2.0 are available also [on figshare](https://doi.org/10.6084/m9.figshare.23751138) in CSV and RDF formats.
 
+The presentation to ISWC 2023 is available [here](https://github.com/miguel76/sparql-clustering/raw/main/docs/ISWC2023_Presentation.pptx).
+
 ## Install
 Go to the root directory and launch:
 ```
